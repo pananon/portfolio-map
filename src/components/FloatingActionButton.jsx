@@ -13,17 +13,17 @@ const FloatingActionButton = ({ personalData }) => {
       color: 'bg-blue-500 hover:bg-blue-600',
       delay: 0.1
     },
-    {
-      icon: Download,
-      label: 'Resume',
-      href: personalData.links.personalSite,
-      color: 'bg-green-500 hover:bg-green-600',
-      delay: 0.2
-    },
+    // {
+    //   icon: Download,
+    //   label: 'Resume',
+    //   href: personalData.links.personalSite,
+    //   color: 'bg-green-500 hover:bg-green-600',
+    //   delay: 0.2
+    // },
     {
       icon: Github,
       label: 'GitHub',
-      href: personalData.links.personalSite,
+      href: personalData.links.github,
       color: 'bg-gray-800 hover:bg-gray-900',
       delay: 0.3
     },

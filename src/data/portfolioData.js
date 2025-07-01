@@ -7,7 +7,8 @@ export const portfolioData = {
     links: {
       linkedin: "https://www.linkedin.com/in/harimangalp/",
       personalSite: "https://divinecoded-3d.netlify.app",
-      codechef: "https://codechef.com/users/pandey01"
+      codechef: "https://codechef.com/users/pandey01",
+      github: "https://github.com/harimangal"
     }
   },
   
