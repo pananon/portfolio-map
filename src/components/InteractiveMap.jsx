@@ -92,7 +92,7 @@ const WORK_COORDS = [
     coordinates: [17.3850, 78.4867], 
     type: 'work',
     color: '#8b5cf6',
-    achievements: ['Microsoft', 'Current position'],
+    achievements: ['Microsoft (TechM)', 'Current position'],
     icon: '🏆',
     awards: [] // No awards in Hyderabad
   },
@@ -364,7 +364,7 @@ const InteractiveMap = ({ data }) => {
           ) : (
             <>
               <Rocket className="w-4 h-4" />
-              Start Journey Animation
+              Click to see in motion
             </>
           )}
         </motion.button>

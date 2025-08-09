@@ -8,14 +8,14 @@ export const portfolioData = {
       linkedin: "https://www.linkedin.com/in/harimangalp/",
       personalSite: "https://divinecoded-3d.netlify.app",
       codechef: "https://codechef.com/users/pandey01",
-      github: "https://github.com/harimangal"
+      github: "https://github.com/pananon"
     }
   },
   
   experience: [
     {
       id: 1,
-      company: "Microsoft",
+      company: "Microsoft (TechM)",
       location: "Hyderabad",
       position: "SDE 2",
       duration: "Feb 2024 – Present",

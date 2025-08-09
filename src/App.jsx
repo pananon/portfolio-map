@@ -38,7 +38,7 @@ function App() {
               className="text-center mb-12"
             >
               <h2 className="text-4xl font-bold text-secondary-900 mb-4">
-                My Journey Across India
+                Education and Career
               </h2>
               <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
                 Explore my professional journey through the cities where I've worked and grown
