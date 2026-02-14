@@ -1,144 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+
+  html,
+  body,
+  canvas,
+  a,
+  button,
+  * {
+    cursor: none !important;
+  }
+
   html {
     scroll-behavior: smooth;
+    @apply antialiased bg-[#050505];
   }
-  
+
   body {
-    @apply bg-secondary-50 text-secondary-900;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply bg-[#050505] text-white;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Syne', sans-serif;
+    @apply tracking-tighter font-bold;
+  }
+
+  ::selection {
+    @apply bg-white text-black;
   }
 }
 
 @layer components {
   .section-padding {
-    @apply py-16 px-4 sm:px-6 lg:px-8;
+    @apply py-24 px-6 md:px-12 lg:px-24;
   }
-  
+
   .container-max {
-    @apply max-w-7xl mx-auto;
+    @apply max-w-7xl mx-auto w-full relative;
   }
-  
-  .gradient-text {
-    @apply bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent;
+
+  /* Sophisticated Glass Effect (Dark) */
+  .glass-dark {
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+
+  /* Map Dark Mode */
+  .map-tiles-dark .leaflet-layer {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
   }
-  
+
+  .dark-map-container {
+    background: #0a0a0a;
+  }
+
+  /* Interactive Elements */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-  
-  .btn-secondary {
-    @apply bg-secondary-200 hover:bg-secondary-300 text-secondary-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-white text-black px-6 py-3 rounded-full font-medium transition-all duration-300 hover:scale-105 hover:bg-gray-200 shadow-[0_0_20px_rgba(255, 255, 255, 0.3)];
   }
 
-  /* Enhanced animations */
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
+  .btn-outline {
+    @apply border border-white/20 text-white px-6 py-3 rounded-full font-medium transition-all duration-300 hover:bg-white/10 hover:border-white;
   }
 
-  .animate-glow {
-    animation: glow 2s ease-in-out infinite alternate;
-  }
-
-  .animate-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-  }
-
-  .glass-effect {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .neon-glow {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3);
-  }
-
-  .text-shadow {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  .card-minimal {
+    @apply bg-white/5 p-8 border border-white/5 transition-all duration-500 hover:border-white/20 hover:bg-white/10 backdrop-blur-sm rounded-2xl;
   }
 }
 
-/* Custom scrollbar */
+@layer utilities {
+  .font-display {
+    font-family: 'Syne', sans-serif;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .noise-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+}
+
+/* Custom Scrollbar for Dark Theme */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #050505;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: #333;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #555;
 }
 
-/* Custom animations */
+/* Leaflet Customizations */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: rgba(10, 10, 10, 0.9) !important;
+  color: white !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px !important;
+}
+
+.custom-popup button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Animation Utilities */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-@keyframes glow {
-  from { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
-  to { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.6); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { 
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-    transform: scale(1);
+  0% {
+    transform: translateY(0px);
   }
-  50% { 
-    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
-    transform: scale(1.05);
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
   }
 }
 
-/* Enhanced hover effects */
-.hover-lift {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
-
-.hover-lift:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-/* Gradient text animations */
-.gradient-text-animated {
-  background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899, #f59e0b);
-  background-size: 300% 300%;
-  animation: gradient-shift 3s ease infinite;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-} 

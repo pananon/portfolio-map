@@ -32,18 +32,17 @@ const Contact = ({ personal }) => {
     setIsSubmitting(true);
     try {
       await emailjs.send(
-        'service_43sevl4', // Replace with your EmailJS service ID
-        'template_5p00xzp', // Replace with your EmailJS template ID
+        'service_43sevl4', // Replaced with user's EmailJS service ID
+        'template_5p00xzp', // Replaced with User's EmailJS template ID
         {
           from_name: formData.name,
           from_email: formData.email,
           message: formData.message,
         },
-        'fErXqUo4-g2Xe3fLD' // Replace with your EmailJS public key
+        'fErXqUo4-g2Xe3fLD' // Replaced with User's EmailJS public key
       );
       setIsSubmitted(true);
       setFormData({ name: '', email: '', message: '' });
-      // Reset form after 3 seconds
       setTimeout(() => {
         setIsSubmitted(false);
       }, 3000);
@@ -77,64 +76,66 @@ const Contact = ({ personal }) => {
   };
 
   return (
-    <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+    <div ref={ref} className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
       {/* Contact Information */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate={inView ? "visible" : "hidden"}
-        className="space-y-8"
+        className="space-y-12"
       >
         <motion.div variants={itemVariants}>
-          <h3 className="text-3xl font-bold text-secondary-900 mb-6">
-            Let's Connect
+          <h3 className="font-display text-4xl font-bold text-white mb-6 tracking-tight">
+            Collaborate
           </h3>
-          <p className="text-lg text-secondary-600 leading-relaxed">
-            I'm always interested in new opportunities and collaborations. 
-            Whether you have a project in mind or just want to chat about technology, 
-            feel free to reach out!
+          <p className="text-xl text-gray-400 leading-relaxed font-light">
+            I'm always interested in new opportunities and collaborations.
+            Whether you have a project in mind or just want to chat about technology,
+            feel free to reach out.
           </p>
         </motion.div>
 
         {/* Contact Details */}
         <motion.div variants={itemVariants} className="space-y-6">
           <motion.a
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ x: 10 }}
             href={`mailto:${personal.email}`}
-            className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+            className="flex items-center gap-6 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-all duration-300 group"
           >
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-500 transition-colors duration-200">
-              <Mail className="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-200" />
+            <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center border border-white/10 group-hover:border-white/20 transition-all">
+              <Mail className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="font-semibold text-secondary-900">Email</h4>
-              <p className="text-secondary-600">{personal.email}</p>
+              <h4 className="text-lg font-bold text-white mb-1">Email</h4>
+              <p className="text-gray-400 group-hover:text-white transition-colors">{personal.email}</p>
             </div>
           </motion.a>
 
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+            whileHover={{ x: 10 }}
+            className="flex items-center gap-6 p-6 rounded-2xl border border-white/5 hover:bg-white/5 transition-all duration-300 group"
           >
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-500 transition-colors duration-200">
-              <MapPin className="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-200" />
+            <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center border border-white/10 group-hover:border-white/20 transition-all">
+              <MapPin className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="font-semibold text-secondary-900">Location</h4>
-              <p className="text-secondary-600">Hyderabad, India</p>
+              <h4 className="text-lg font-bold text-white mb-1">Base</h4>
+              <p className="text-gray-400 group-hover:text-white transition-colors">Hyderabad, India</p>
             </div>
           </motion.div>
         </motion.div>
 
         {/* Availability Status */}
-        <motion.div variants={itemVariants} className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-            <span className="font-semibold">Available for Opportunities</span>
+        <motion.div variants={itemVariants} className="glass-dark rounded-2xl p-8 border border-white/5">
+          <div className="flex items-center gap-4 mb-4">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            <span className="font-bold text-white tracking-wide uppercase text-sm">Open to Work</span>
           </div>
-          <p className="text-green-100">
-            I'm currently open to new opportunities and would love to discuss 
-            potential collaborations or projects.
+          <p className="text-gray-400 leading-relaxed">
+            I am currently available for freelance projects and full-time opportunities.
           </p>
         </motion.div>
       </motion.div>
@@ -144,9 +145,9 @@ const Contact = ({ personal }) => {
         initial={{ opacity: 0, x: 30 }}
         animate={inView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
         transition={{ delay: 0.3, duration: 0.6 }}
-        className="bg-white rounded-xl p-8 shadow-lg border border-secondary-100"
+        className="glass-dark rounded-3xl p-10 border border-white/5 shadow-2xl bg-[#0a0a0a]"
       >
-        <h3 className="text-2xl font-bold text-secondary-900 mb-6">
+        <h3 className="font-display text-2xl font-bold text-white mb-8">
           Send a Message
         </h3>
 
@@ -154,20 +155,22 @@ const Contact = ({ personal }) => {
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-12"
+            className="text-center py-20"
           >
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h4 className="text-xl font-semibold text-secondary-900 mb-2">
-              Message Sent Successfully!
+            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-10 h-10 text-green-500" />
+            </div>
+            <h4 className="text-2xl font-bold text-white mb-4">
+              Message Sent
             </h4>
-            <p className="text-secondary-600">
-              Thank you for reaching out. I'll get back to you soon!
+            <p className="text-gray-400">
+              Thank you for reaching out. I'll get back to you soon.
             </p>
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-secondary-700 mb-2">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium text-gray-400 ml-1">
                 Name
               </label>
               <input
@@ -177,13 +180,13 @@ const Contact = ({ personal }) => {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
-                placeholder="Your name"
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-white/20 focus:border-white/20 focus:outline-none transition-all duration-300"
+                placeholder="John Doe"
               />
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-secondary-700 mb-2">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-gray-400 ml-1">
                 Email
               </label>
               <input
@@ -193,13 +196,13 @@ const Contact = ({ personal }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
-                placeholder="your.email@example.com"
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-white/20 focus:border-white/20 focus:outline-none transition-all duration-300"
+                placeholder="john@example.com"
               />
             </div>
 
-            <div>
-              <label htmlFor="message" className="block text-sm font-medium text-secondary-700 mb-2">
+            <div className="space-y-2">
+              <label htmlFor="message" className="text-sm font-medium text-gray-400 ml-1">
                 Message
               </label>
               <textarea
@@ -209,8 +212,8 @@ const Contact = ({ personal }) => {
                 onChange={handleInputChange}
                 required
                 rows={5}
-                className="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 resize-none"
-                placeholder="Tell me about your project or opportunity..."
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-white/20 focus:border-white/20 focus:outline-none transition-all duration-300 resize-none"
+                placeholder="Your message..."
               />
             </div>
 
@@ -219,12 +222,12 @@ const Contact = ({ personal }) => {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-secondary-400 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full bg-white hover:bg-gray-200 disabled:bg-gray-600 text-black font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 mt-4"
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Sending...</span>
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <span>Processing...</span>
                 </>
               ) : (
                 <>
@@ -240,4 +243,4 @@ const Contact = ({ personal }) => {
   );
 };
 
-export default Contact; 
+export default Contact;
