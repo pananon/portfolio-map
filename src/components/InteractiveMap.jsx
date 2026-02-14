@@ -1,846 +1,441 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, Circle } from 'react-leaflet';
-import L from 'leaflet';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Building, Calendar, BookOpen, Star, Zap, Rocket, Trophy, GraduationCap, Briefcase, Play, Pause, RotateCcw } from 'lucide-react';
-import 'leaflet/dist/leaflet.css';
+import React, { useState, useEffect, useMemo, Suspense, useRef } from 'react';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { OrbitControls, Stars, Html } from '@react-three/drei';
+import * as THREE from 'three';
+import { useInView } from 'react-intersection-observer';
+import {
+  Building,
+  GraduationCap,
+  MapPin,
+  ArrowDown,
+  Globe as GlobeIcon
+} from 'lucide-react';
 
-// Fix marker icon for Leaflet in React
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// --- DATA ---
+const TIMELINE_DATA = [
+  {
+    id: 'intro',
+    year: 'Start',
+    title: 'The Beginning',
+    location: 'India',
+    coordinates: [20.5937, 78.9629], // Center of India
+    type: 'education',
+    description: 'A journey of technical excellence across the Indian subcontinent.',
+    icon: GlobeIcon,
+    color: '#ffffff'
+  },
+  {
+    id: 'school-start',
+    year: '2009',
+    title: 'Early Foundation',
+    location: 'Ambala Cantt',
+    coordinates: [30.3752, 76.7821],
+    type: 'education',
+    description: 'Started my educational journey at KVS Ambala Cantt.',
+    icon: GraduationCap,
+    color: '#3b82f6'
+  },
+  {
+    id: 'school-end',
+    year: '2015',
+    title: 'Secondary Education',
+    location: 'Basti, UP',
+    coordinates: [26.8137, 82.7634],
+    type: 'education',
+    description: 'Completed schooling with excellence in academics.',
+    icon: GraduationCap,
+    color: '#f97316'
+  },
+  {
+    id: 'jee-prep',
+    year: '2016',
+    title: 'Competitive Exams',
+    location: 'Kota, Rajasthan',
+    coordinates: [25.2138, 75.8648],
+    type: 'education',
+    description: 'Rigorous preparation for IIT-JEE.',
+    icon: MapPin,
+    color: '#eab308'
+  },
+  {
+    id: 'college',
+    year: '2016 - 2020',
+    title: 'B.Tech CS',
+    location: 'Noida, UP',
+    coordinates: [28.5355, 77.3910],
+    type: 'education',
+    description: 'B.Tech in Computer Science from JSS Academy.',
+    icon: GraduationCap,
+    color: '#8b5cf6'
+  },
+  {
+    id: 'work-1',
+    year: '2020 - 2021',
+    title: 'Software Engineer',
+    location: 'Noida',
+    coordinates: [28.5700, 77.3200],
+    type: 'work',
+    description: 'First professional role as a Full Stack Developer.',
+    icon: Building,
+    color: '#06b6d4'
+  },
+  {
+    id: 'work-2',
+    year: '2021 - 2023',
+    title: 'Senior Developer',
+    location: 'Bengaluru',
+    coordinates: [12.9716, 77.5946],
+    type: 'work',
+    description: 'Building cloud-native applications in the tech capital.',
+    icon: Building,
+    color: '#10b981'
+  },
+  {
+    id: 'current',
+    year: 'Present',
+    title: 'Tech Lead',
+    location: 'Hyderabad',
+    coordinates: [17.3850, 78.4867],
+    type: 'work',
+    description: 'Driving technical strategy at Microsoft (TechM).',
+    icon: Building,
+    color: '#22c55e'
+  }
+];
 
-// Red marker icon and shadow from leaflet-color-markers CDN
-const redMarkerIcon = 'https://unpkg.com/leaflet-color-markers@1.1.1/img/marker-icon-red.png';
-const redMarkerIcon2x = 'https://unpkg.com/leaflet-color-markers@1.1.1/img/marker-icon-2x-red.png';
-const markerShadowCDN = 'https://unpkg.com/leaflet-color-markers@1.1.1/img/marker-shadow.png';
-const customIcon = new L.Icon({
-  iconUrl: redMarkerIcon,
-  iconRetinaUrl: redMarkerIcon2x,
-  shadowUrl: markerShadowCDN,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+const GLOBE_RADIUS = 3;
 
-// Custom animated marker icons
-const createAnimatedIcon = (color, size = 25) => {
-  return L.divIcon({
-    className: 'custom-animated-marker',
-    html: `
-      <div style="
-        width: ${size}px; 
-        height: ${size}px; 
-        background: ${color}; 
-        border-radius: 50%; 
-        border: 3px solid white; 
-        box-shadow: 0 0 20px ${color}40, 0 0 40px ${color}20;
-        animation: pulse 2s infinite;
-        position: relative;
-      ">
-        <div style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 8px;
-          height: 8px;
-          background: white;
-          border-radius: 50%;
-        "></div>
-      </div>
-      <style>
-        @keyframes pulse {
-          0% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.2); opacity: 0.7; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-      </style>
-    `,
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
-  });
+// Precise conversion to align with Three.js SphereGeometry
+const latLonToVector3 = (lat, lon, radius) => {
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 90) * (Math.PI / 180);
+
+  const x = -(radius * Math.sin(phi) * Math.cos(theta));
+  const z = (radius * Math.sin(phi) * Math.sin(theta));
+  const y = (radius * Math.cos(phi));
+
+  return new THREE.Vector3(x, y, z);
 };
 
-// Work journey with enhanced data
-const WORK_COORDS = [
-  { 
-    name: 'Noida', 
-    coordinates: [28.5355, 77.3910], 
-    type: 'work',
-    color: '#3b82f6',
-    achievements: ['Started career journey', 'First professional role'],
-    icon: '🚀',
-    awards: ['State Chess Champion', 'Gold Medal - 100m Race', 'Tritya Soupan - Scout and Guide'] // Awards earned in Noida
-  },
-  { 
-    name: 'Bengaluru', 
-    coordinates: [12.9716, 77.5946], 
-    type: 'work',
-    color: '#10b981',
-    achievements: ['Senior role', 'Leadership experience'],
-    icon: '⭐',
-    awards: [] // No awards in Bengaluru
-  },
-  { 
-    name: 'Hyderabad', 
-    coordinates: [17.3850, 78.4867], 
-    type: 'work',
-    color: '#8b5cf6',
-    achievements: ['Microsoft (TechM)', 'Current position'],
-    icon: '🏆',
-    awards: [] // No awards in Hyderabad
-  },
-];
+// --- 3D COMPONENTS ---
 
-// Education journey with enhanced data
-const EDU_COORDS = [
-  { 
-    name: 'Ambala Cantt', 
-    coordinates: [30.3752, 76.7821], 
-    type: 'edu', 
-    label: 'KVS Ambala Cantt (Up to 6th)',
-    color: '#ef4444',
-    achievements: ['Foundation years', 'Early education'],
-    icon: '📚'
-  },
-  { 
-    name: 'Basti', 
-    coordinates: [26.8137, 82.7634], 
-    type: 'edu', 
-    label: 'KVS Basti (6th–12th)',
-    color: '#f59e0b',
-    achievements: ['Secondary education', 'Academic excellence'],
-    icon: '🎓'
-  },
-  { 
-    name: 'Kota', 
-    coordinates: [25.2138, 75.8648], 
-    type: 'edu', 
-    label: 'Kota (JEE Prep)',
-    color: '#ec4899',
-    achievements: ['JEE preparation', 'Competitive exams'],
-    icon: '⚡'
-  },
-  { 
-    name: 'Noida', 
-    coordinates: [28.5355, 77.3910], 
-    type: 'edu', 
-    label: 'Noida (BTech)',
-    color: '#06b6d4',
-    achievements: ['BTech degree', 'Computer Science'],
-    icon: '💻'
-  },
-];
-
-const InteractiveMap = ({ data }) => {
-  const [activeCity, setActiveCity] = useState(null);
-  const [activeExperience, setActiveExperience] = useState(null);
-  const [activeType, setActiveType] = useState(null);
-  const [showJourneyAnimation, setShowJourneyAnimation] = useState(false);
-  const [currentJourneyStep, setCurrentJourneyStep] = useState(0);
-  const [weatherEffect, setWeatherEffect] = useState(false);
-  const mapRef = useRef(null);
-
-  const indiaCenter = [20.5937, 78.9629];
-  const indiaZoom = 5;
-
-  // Journey animation effect
-  useEffect(() => {
-    if (!showJourneyAnimation) return;
-
-    const interval = setInterval(() => {
-      setCurrentJourneyStep(prev => {
-        if (prev >= EDU_COORDS.length + WORK_COORDS.length - 1) {
-          setShowJourneyAnimation(false);
-          return 0;
-        }
-        return prev + 1;
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [showJourneyAnimation]);
-
-  // Auto-show cards during animation
-  useEffect(() => {
-    if (showJourneyAnimation) {
-      const currentCity = getCurrentAnimationCity();
-      setActiveCity(currentCity);
-      setActiveType(currentCity.type);
-    }
-  }, [currentJourneyStep, showJourneyAnimation]);
-
-  // Weather effect toggle
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWeatherEffect(prev => !prev);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Get experiences for a city
-  const getExperiencesForCity = (cityName) => {
-    const cityObj = data.mapData.india.cities.find(c => c.name === cityName);
-    if (!cityObj) return [];
-    return data.experience.filter(exp => cityObj.experiences.includes(exp.id));
-  };
-
-  // Get education for a city
-  const getEducationForCity = (cityName) => {
-    if (cityName === 'Ambala Cantt') {
-      return [{
-        institution: 'KVS Ambala Cantt',
-        degree: 'Schooling (Up to 6th)',
-        duration: 'Up to 2009',
-        location: 'Ambala Cantt, Haryana',
-        description: 'Studied up to 6th standard at Kendriya Vidyalaya, Ambala Cantt.',
-        achievements: ['Foundation years', 'Early education']
-      }];
-    }
-    if (cityName === 'Basti') {
-      return [{
-        institution: 'KVS Basti',
-        degree: 'Schooling (6th–12th)',
-        duration: '2009–2015',
-        location: 'Basti, Uttar Pradesh',
-        description: 'Studied from 6th to 12th standard at Kendriya Vidyalaya, Basti.',
-        achievements: ['Secondary education', 'Academic excellence']
-      }];
-    }
-    if (cityName === 'Kota') {
-      return [{
-        institution: 'Kota (JEE Prep)',
-        degree: 'JEE Preparation',
-        duration: '2015–2016',
-        location: 'Kota, Rajasthan',
-        description: 'Prepared for JEE, secured AIR 19319 in IIT JEE Advance and AIR 421 in UPTU.',
-        achievements: ['JEE preparation', 'Competitive exams']
-      }];
-    }
-    if (cityName === 'Noida') {
-      return [{
-        institution: 'JSS Academy of Technical Education',
-        degree: 'BTech, Computer Science',
-        duration: '2016–2020',
-        location: 'Noida, Uttar Pradesh',
-        description: 'Graduated with strong foundation in computer science fundamentals, algorithms, and software engineering principles.',
-        achievements: ['BTech degree', 'Computer Science']
-      }];
-    }
-    return [];
-  };
-
-  // Get awards for a city (if any)
-  const getAwardsForCity = (cityName) => {
-    const city = WORK_COORDS.find(city => city.name === cityName);
-    return city ? city.awards || [] : [];
-  };
-
-  // Get current city for animation
-  const getCurrentAnimationCity = () => {
-    if (currentJourneyStep < EDU_COORDS.length) {
-      return EDU_COORDS[currentJourneyStep];
-    } else {
-      return WORK_COORDS[currentJourneyStep - EDU_COORDS.length];
-    }
-  };
-
-  // Get all cities for the complete journey
-  const getAllJourneyCities = () => {
-    return [...EDU_COORDS, ...WORK_COORDS];
-  };
-
-  // Custom popup content
-  const createCustomPopup = (city, type) => (
-    <div className="custom-popup">
-      <div className="text-center">
-        <div className="text-2xl mb-2">
-          {type === 'awards' ? '🏆' : city.icon}
-        </div>
-        <h3 className="font-bold text-lg text-gray-800 mb-1">{city.name}</h3>
-        <p className="text-sm text-gray-600 mb-3">
-          {type === 'work' ? 'Professional Journey' : 
-           type === 'edu' ? 'Educational Journey' : 
-           'Awards & Recognition'}
-        </p>
-        <div className="flex flex-wrap gap-1 justify-center">
-          {type === 'awards' ? 
-            city.awards.slice(0, 2).map((award, idx) => (
-              <span key={idx} className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                {award}
-              </span>
-            )) :
-            city.achievements.map((achievement, idx) => (
-              <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                {achievement}
-              </span>
-            ))
-          }
-        </div>
-        <button
-          className={`mt-3 px-4 py-2 rounded-lg text-sm transition-colors ${
-            type === 'awards' 
-              ? 'bg-yellow-600 text-white hover:bg-yellow-700' 
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-          onClick={() => { setActiveCity(city); setActiveType(type); }}
-        >
-          Explore Details
-        </button>
-      </div>
-    </div>
-  );
-
-  // Custom markers
-  const createCustomIcon = (type) => {
-    return L.divIcon({
-      className: 'custom-marker',
-      html: `
-        <div class="marker-container">
-          <div class="marker-icon ${type}">
-            ${type === 'education' ? '🎓' : type === 'work' ? '💼' : '🏆'}
-          </div>
-        </div>
-      `,
-      iconSize: [40, 40],
-      iconAnchor: [20, 40],
-      popupAnchor: [0, -40]
-    });
-  };
+const GlowingEarth = ({ activeStep }) => {
+  const colorMap = useLoader(THREE.TextureLoader, 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
+  const specularMap = useLoader(THREE.TextureLoader, 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
+  const normalMap = useLoader(THREE.TextureLoader, 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg');
 
   return (
-    <div className="relative">
-      {/* Weather Effect Overlay */}
-      {weatherEffect && (
-        <div className="absolute inset-0 pointer-events-none z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-200/20 to-transparent animate-pulse"></div>
-          <div className="absolute top-0 left-0 w-full h-full">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-1 h-1 bg-white/60 rounded-full animate-bounce"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 2}s`,
-                  animationDuration: `${1 + Math.random() * 2}s`
-                }}
+    <group rotation={[0, -Math.PI / 2, 0]}>
+      {/* Base Earth */}
+      <mesh>
+        <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+        <meshPhongMaterial
+          map={colorMap}
+          specularMap={specularMap}
+          normalMap={normalMap}
+          shininess={10}
+        />
+      </mesh>
+
+      {/* Atmosphere Glow */}
+      <mesh scale={[1.02, 1.02, 1.02]}>
+        <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+        <meshPhongMaterial
+          color="#4488ff"
+          transparent
+          opacity={0.1}
+          side={THREE.BackSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <Clouds />
+
+      {/* Surface Markers */}
+      {TIMELINE_DATA.map((item, index) => {
+        if (item.id === 'intro') return null; // Skip marker for intro view
+        const isActive = activeStep === index;
+        const pos = latLonToVector3(item.coordinates[0], item.coordinates[1], GLOBE_RADIUS);
+
+        return (
+          <Marker3D
+            key={item.id}
+            position={pos}
+            color={item.color}
+            isActive={isActive}
+            label={item.location}
+          />
+        );
+      })}
+
+      <Arcs data={TIMELINE_DATA.filter(d => d.id !== 'intro')} activeStep={activeStep > 0 ? activeStep - 1 : 0} />
+    </group>
+  );
+};
+
+const Clouds = () => {
+  const cloudsMap = useLoader(THREE.TextureLoader, 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png');
+  const mesh = useRef();
+
+  useFrame(() => {
+    if (mesh.current) {
+      mesh.current.rotation.y += 0.0002;
+    }
+  });
+
+  return (
+    <mesh ref={mesh} scale={[1.015, 1.015, 1.015]}>
+      <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
+      <meshStandardMaterial
+        map={cloudsMap}
+        transparent
+        opacity={0.3}
+        blending={THREE.AdditiveBlending}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+};
+
+const Marker3D = ({ position, color, isActive, label }) => {
+  // Dynamic scale for "Zoom into location" feel
+  // We don't scale marker itself too much, but height helps visibility
+  const height = isActive ? 1.5 : 0.4;
+  const opacity = isActive ? 0.9 : 0.5;
+
+  const normal = position.clone().normalize();
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+
+  return (
+    <group position={position} quaternion={quaternion}>
+      {/* Light Beam */}
+      <mesh position={[0, height / 2, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, height, 8]} />
+        <meshBasicMaterial color={color} transparent opacity={opacity} />
+      </mesh>
+
+      {/* Base Ring - Pulses if active */}
+      <mesh position={[0, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.04, isActive ? 0.15 : 0.08, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Target Reticle (Active Only) using HTML for clean overlay or mesh for 3D feel? 
+          User asked for zoom, so keeping it 3D is better.
+      */}
+
+      {/* Pin Head */}
+      <mesh position={[0, height, 0]}>
+        <sphereGeometry args={[0.05, 16, 16]} />
+        <meshBasicMaterial color="white" />
+      </mesh>
+
+      {/* Label */}
+      {isActive && (
+        <Html position={[0, height + 0.3, 0]} center distanceFactor={15}>
+          <div className="bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold px-3 py-1.5 rounded border border-white/20 whitespace-nowrap shadow-xl flex flex-col items-center">
+            <span>{label}</span>
+            <div className="w-px h-2 bg-white/20 absolute -bottom-2"></div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+};
+
+const Arcs = ({ data, activeStep }) => {
+  return (
+    <group>
+      {data.map((item, i) => {
+        if (i >= data.length - 1) return null;
+        // Skip arc if distance is very near (same city)
+        if (item.coordinates[0] === data[i + 1].coordinates[0] && item.coordinates[1] === data[i + 1].coordinates[1]) return null;
+
+        const start = latLonToVector3(item.coordinates[0], item.coordinates[1], GLOBE_RADIUS);
+        const end = latLonToVector3(data[i + 1].coordinates[0], data[i + 1].coordinates[1], GLOBE_RADIUS);
+        const isActive = i <= activeStep; // All previous arcs lit? or just current?
+
+        return <ArcCurve key={i} start={start} end={end} isActive={isActive} />;
+      })}
+    </group>
+  );
+};
+
+const ArcCurve = ({ start, end, isActive }) => {
+  const points = useMemo(() => {
+    // Higher arc for longer distance
+    const dist = start.distanceTo(end);
+    const mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(GLOBE_RADIUS + dist * 0.5);
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    return curve.getPoints(40);
+  }, [start, end]);
+
+  return (
+    <line>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={points.length}
+          array={new Float32Array(points.flatMap(p => [p.x, p.y, p.z]))}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <lineBasicMaterial
+        color={isActive ? "#60a5fa" : "#333333"} // Blue if active 
+        opacity={isActive ? 0.8 : 0.2}
+        transparent
+        linewidth={1}
+      />
+    </line>
+  );
+};
+
+// --- PARALLAX CAMERA CONTROLLER ---
+const MapController = ({ activeStep }) => {
+  useFrame((state) => {
+    // 1. Calculate Target Point in Local Globe Space
+    const item = TIMELINE_DATA[activeStep];
+    const localTarget = latLonToVector3(item.coordinates[0], item.coordinates[1], GLOBE_RADIUS);
+
+    // 2. Convert to World Space (Apply Globe's Rotation of -90 deg Y)
+    // We rotate vectors by applying the axis angle
+    const worldTarget = localTarget.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
+
+    // 3. Determine Zoom Level (Altitude)
+    // Close Zoom = 4.0 radius (1.0 altitude above surface)
+    // Far Zoom = 8.0 radius (5.0 altitude)
+    const minRadius = GLOBE_RADIUS + 2.5; // Zoom into location
+    const maxRadius = GLOBE_RADIUS + 7.0; // Zoom out during travel
+
+    // 4. Interpolate Current Direction
+    const currentPos = state.camera.position.clone();
+    const currentDir = currentPos.clone().normalize();
+    const targetDir = worldTarget.clone().normalize();
+
+    // Smoothly rotate direction
+    const rotSpeed = 0.03;
+    currentDir.lerp(targetDir, rotSpeed).normalize();
+
+    // 5. Calculate "Hop" Zoom Effect
+    // Distance from target direction (1.0 is aligned, <1.0 is far)
+    const alignment = currentDir.dot(targetDir);
+    // alignment 0.99 -> close. 0.8 -> far.
+    // curve: from 0 to 1 based on alignment.
+    // We want radius to be LARGE when alignment is LOW.
+    const zoomFactor = Math.pow(1 - alignment, 2) * 200; // Exponential zoom out
+    // Clamp zoom
+    const targetRadius = Math.min(minRadius + zoomFactor, maxRadius);
+
+    // Smoothly interpolate radius
+    const currentRadius = currentPos.length();
+    const newRadius = THREE.MathUtils.lerp(currentRadius, targetRadius, 0.05);
+
+    // 6. Apply Position
+    const newPos = currentDir.multiplyScalar(newRadius);
+    state.camera.position.copy(newPos);
+
+    // 7. Look at Center (always keeps globe in view)
+    state.camera.lookAt(0, 0, 0);
+  });
+  return null;
+};
+
+// --- MAIN WRAPPER ---
+const InteractiveMap = () => {
+  const [activeStep, setActiveStep] = useState(0);
+
+  return (
+    <div className="relative w-full">
+      <div className="flex flex-col lg:flex-row-reverse">
+
+        {/* 3D Scene */}
+        <div className="h-[50vh] lg:h-screen lg:w-3/5 sticky top-0 z-10 lg:order-2 bg-[#050505] overflow-hidden">
+          <Canvas camera={{ position: [0, 0, 10], fov: 35 }}> {/* Narrow FOV for cinematic look */}
+            <color attach="background" args={['#050505']} />
+
+            <ambientLight intensity={0.4} />
+            <directionalLight position={[10, 5, 5]} intensity={2} color="#ffffff" />
+            <pointLight position={[-10, -5, -5]} intensity={0.5} color="#4488ff" />
+
+            <Suspense fallback={null}>
+              <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade />
+              <GlowingEarth activeStep={activeStep} />
+              <MapController activeStep={activeStep} />
+            </Suspense>
+
+            <OrbitControls enableZoom={false} enablePan={false} enableRotate={false} />
+          </Canvas>
+
+          {/* Vignette & Grain */}
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,#050505_95%)]" />
+
+        </div>
+
+        {/* Narrative Content */}
+        <div className="lg:w-2/5 relative z-20 lg:order-1">
+          <div className="max-w-lg mx-auto px-6 py-12 lg:py-24 space-y-48 pb-64">
+            <div className="space-y-4 pt-12">
+              <div className="flex items-center gap-2 text-blue-400 font-mono text-sm tracking-wider">
+                <GlobeIcon className="w-4 h-4" />
+                <span>GEOSPATIAL JOURNEY</span>
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
+                India <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                  Career Path
+                </span>
+              </h2>
+              <p className="text-gray-400 text-lg leading-relaxed">
+                Interactive 3D timeline.
+                <br />
+                <span className="text-sm opacity-60">Scroll to explore &gt;</span>
+              </p>
+            </div>
+
+            {TIMELINE_DATA.map((item, index) => (
+              <NarrativeCard
+                key={item.id}
+                item={item}
+                index={index}
+                onActive={() => setActiveStep(index)}
               />
             ))}
           </div>
         </div>
-      )}
-
-      {/* Journey Animation Controls */}
-      <div className="absolute top-4 left-4 z-20">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => {
-            setShowJourneyAnimation(!showJourneyAnimation);
-            setCurrentJourneyStep(0);
-          }}
-          className={`px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 ${
-            showJourneyAnimation 
-              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white' 
-              : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
-          }`}
-        >
-          {showJourneyAnimation ? (
-            <>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              >
-                <Zap className="w-4 h-4" />
-              </motion.div>
-              Journey in Progress...
-            </>
-          ) : (
-            <>
-              <Rocket className="w-4 h-4" />
-              Click to see in motion
-            </>
-          )}
-        </motion.button>
       </div>
-
-      {/* Current City Indicator */}
-      {showJourneyAnimation && (
-        <div className="absolute top-4 left-64 z-20">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-gray-200"
-          >
-            <div className="flex items-center gap-2">
-              <div className="text-2xl">{getCurrentAnimationCity().icon}</div>
-              <div>
-                <div className="font-semibold text-gray-800 text-sm">
-                  {getCurrentAnimationCity().name}
-                </div>
-                <div className="text-xs text-gray-600">
-                  {getCurrentAnimationCity().type === 'work' ? 'Professional Journey' : 'Educational Journey'}
-                </div>
-                <div className="text-xs text-blue-600 font-medium mt-1">
-                  📖 Auto-showing details...
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Map Container */}
-        <div className="relative h-[500px] lg:h-[700px] rounded-xl overflow-hidden shadow-2xl border-4 border-white">
-          <MapContainer 
-            center={indiaCenter} 
-            zoom={indiaZoom} 
-            scrollWheelZoom={false} 
-            className="w-full h-full rounded-xl z-0"
-            ref={mapRef}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {/* Animated Journey Path */}
-            <Polyline 
-              positions={WORK_COORDS.map(city => [city.coordinates[0], city.coordinates[1]])} 
-              color="#3b82f6" 
-              weight={4} 
-              dashArray="8 8"
-              className="journey-path"
-            />
-            <Polyline 
-              positions={EDU_COORDS.map(city => [city.coordinates[0], city.coordinates[1]])} 
-              color="#ef4444" 
-              weight={4} 
-              dashArray="6 10"
-              className="journey-path"
-            />
-
-            {/* Work Markers with Custom Icons */}
-            {WORK_COORDS.map((city, idx) => (
-              <Marker
-                key={city.name + '-work'}
-                position={[city.coordinates[0], city.coordinates[1]]}
-                icon={createAnimatedIcon(
-                  city.color, 
-                  showJourneyAnimation && getCurrentAnimationCity().name === city.name ? 40 : 30
-                )}
-                eventHandlers={{
-                  click: () => { setActiveCity(city); setActiveType('work'); },
-                }}
-              >
-                <Popup className="custom-popup-container">
-                  {createCustomPopup(city, 'work')}
-                </Popup>
-              </Marker>
-            ))}
-
-            {/* Education Markers with Custom Icons */}
-            {EDU_COORDS.map((city, idx) => (
-              <Marker
-                key={city.name + '-edu'}
-                position={[city.coordinates[0], city.coordinates[1]]}
-                icon={createAnimatedIcon(
-                  city.color, 
-                  showJourneyAnimation && getCurrentAnimationCity().name === city.name ? 35 : 25
-                )}
-                eventHandlers={{
-                  click: () => { setActiveCity(city); setActiveType('edu'); },
-                }}
-              >
-                <Popup className="custom-popup-container">
-                  {createCustomPopup(city, 'edu')}
-                </Popup>
-              </Marker>
-            ))}
-
-            {/* Awards Markers */}
-            {WORK_COORDS.filter(city => city.awards && city.awards.length > 0).map((city, idx) => (
-              <Marker
-                key={city.name + '-awards'}
-                position={[city.coordinates[0] + 0.1, city.coordinates[1] + 0.1]}
-                icon={createCustomIcon('awards')}
-                eventHandlers={{
-                  click: () => { setActiveCity(city); setActiveType('awards'); },
-                }}
-              >
-                <Popup className="custom-popup-container">
-                  {createCustomPopup(city, 'awards')}
-                </Popup>
-              </Marker>
-            ))}
-
-            {/* Journey Animation Circles */}
-            {showJourneyAnimation && (
-              <>
-                <Circle
-                  center={[getCurrentAnimationCity().coordinates[0], getCurrentAnimationCity().coordinates[1]]}
-                  radius={80000}
-                  pathOptions={{
-                    color: getCurrentAnimationCity().color,
-                    fillColor: getCurrentAnimationCity().color,
-                    fillOpacity: 0.2,
-                    weight: 3
-                  }}
-                />
-                <Circle
-                  center={[getCurrentAnimationCity().coordinates[0], getCurrentAnimationCity().coordinates[1]]}
-                  radius={40000}
-                  pathOptions={{
-                    color: getCurrentAnimationCity().color,
-                    fillColor: getCurrentAnimationCity().color,
-                    fillOpacity: 0.4,
-                    weight: 2
-                  }}
-                />
-              </>
-            )}
-
-            {/* Journey Progress Indicator */}
-            {showJourneyAnimation && (
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-10">
-                <div className="text-sm font-semibold text-gray-800 mb-2">Journey Progress</div>
-                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-purple-500 to-blue-500"
-                    initial={{ width: 0 }}
-                    animate={{ 
-                      width: `${((currentJourneyStep + 1) / (EDU_COORDS.length + WORK_COORDS.length)) * 100}%` 
-                    }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {currentJourneyStep + 1} / {EDU_COORDS.length + WORK_COORDS.length}
-                </div>
-              </div>
-            )}
-          </MapContainer>
-
-          {/* Map Legend */}
-          <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg z-10">
-            <div className="text-sm font-semibold text-gray-800 mb-2">Legend</div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-xs text-gray-700">Work Journey</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-xs text-gray-700">Education Journey</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span className="text-xs text-gray-700">Awards & Recognition</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Experience/Education Cards */}
-        <AnimatePresence mode="wait">
-          {activeCity && activeType === 'work' ? (
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 40 }}
-              transition={{ duration: 0.4 }}
-              className={`h-[500px] lg:h-[700px] overflow-y-auto rounded-xl shadow-lg p-6 border ${
-                showJourneyAnimation 
-                  ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-xl' 
-                  : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-3xl">{activeCity.icon}</div>
-                <div>
-                  <h2 className="text-2xl font-bold text-blue-900">{activeCity.name} Experience</h2>
-                  <p className="text-blue-600">Professional Journey</p>
-                  {showJourneyAnimation && (
-                    <div className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                      >
-                        ⏱️
-                      </motion.div>
-                      Auto-displaying during journey
-                    </div>
-                  )}
-                </div>
-              </div>
-              {getExperiencesForCity(activeCity.name).map((exp, idx) => (
-                <motion.div
-                  key={exp.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white rounded-xl p-4 shadow-lg border-l-4 mb-6 border-blue-400 cursor-pointer transition-all duration-200 hover:shadow-xl"
-                >
-                  <div className="flex items-start gap-3 mb-2">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Briefcase className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {exp.position}
-                      </h3>
-                      <p className="text-sm text-blue-600">
-                        {exp.company}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{exp.location}</span>
-                    <Calendar className="w-4 h-4 ml-2" />
-                    <span>{exp.duration}</span>
-                  </div>
-                  <div className="mb-2 text-gray-700 text-sm">
-                    {exp.achievements.map((achievement, i) => (
-                      <div key={i} className="flex items-start gap-2 mb-1">
-                        <Star className="w-3 h-3 text-yellow-500 mt-0.5 flex-shrink-0" />
-                        <span>{achievement}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {exp.technologies.map((tech, i) => (
-                      <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : activeCity && activeType === 'edu' ? (
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 40 }}
-              transition={{ duration: 0.4 }}
-              className={`h-[500px] lg:h-[700px] overflow-y-auto rounded-xl shadow-lg p-6 border ${
-                showJourneyAnimation 
-                  ? 'bg-gradient-to-br from-red-50 to-pink-50 border-red-200 shadow-xl' 
-                  : 'bg-gradient-to-br from-red-50 to-pink-50 border-red-100'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-3xl">{activeCity.icon}</div>
-                <div>
-                  <h2 className="text-2xl font-bold text-red-900">{activeCity.label || activeCity.name} Education</h2>
-                  <p className="text-red-600">Learning Journey</p>
-                  {showJourneyAnimation && (
-                    <div className="text-xs text-red-600 font-medium mt-1 flex items-center gap-1">
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                      >
-                        ⏱️
-                      </motion.div>
-                      Auto-displaying during journey
-                    </div>
-                  )}
-                </div>
-              </div>
-              {getEducationForCity(activeCity.name).map((edu, idx) => (
-                <motion.div
-                  key={edu.institution + idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white rounded-xl p-4 shadow-lg border-l-4 mb-6 border-red-400 cursor-pointer transition-all duration-200 hover:shadow-xl"
-                >
-                  <div className="flex items-start gap-3 mb-2">
-                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                      <GraduationCap className="w-5 h-5 text-red-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {edu.institution}
-                      </h3>
-                      <p className="text-sm text-red-600">
-                        {edu.degree}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{edu.location}</span>
-                    <Calendar className="w-4 h-4 ml-2" />
-                    <span>{edu.duration}</span>
-                  </div>
-                  <div className="mb-2 text-gray-700 text-sm">
-                    {edu.description}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {edu.achievements.map((achievement, i) => (
-                      <span key={i} className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                        {achievement}
-                      </span>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : activeCity && activeType === 'awards' ? (
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 40 }}
-              transition={{ duration: 0.4 }}
-              className={`h-[500px] lg:h-[700px] overflow-y-auto rounded-xl shadow-lg p-6 border ${
-                showJourneyAnimation 
-                  ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 shadow-xl' 
-                  : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-100'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-3xl">🏆</div>
-                <div>
-                  <h2 className="text-2xl font-bold text-yellow-900">{activeCity.name} Awards</h2>
-                  <p className="text-yellow-600">Achievements & Recognition</p>
-                  {showJourneyAnimation && (
-                    <div className="text-xs text-yellow-600 font-medium mt-1 flex items-center gap-1">
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                      >
-                        ⏱️
-                      </motion.div>
-                      Auto-displaying during journey
-                    </div>
-                  )}
-                </div>
-              </div>
-              {getAwardsForCity(activeCity.name).map((award, idx) => (
-                <motion.div
-                  key={award + idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white rounded-xl p-4 shadow-lg border-l-4 mb-6 border-yellow-400 cursor-pointer transition-all duration-200 hover:shadow-xl"
-                >
-                  <div className="flex items-start gap-3 mb-2">
-                    <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <Trophy className="w-5 h-5 text-yellow-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {award}
-                      </h3>
-                      <p className="text-sm text-yellow-600">
-                        Achievement
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    <span>Recognition Award</span>
-                  </div>
-                  <div className="mb-2 text-gray-700 text-sm">
-                    This award represents excellence and achievement in various fields including sports, 
-                    academics, and extracurricular activities.
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                      Achievement
-                    </span>
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                      Recognition
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 40 }}
-              transition={{ duration: 0.4 }}
-              className="h-[500px] lg:h-[700px] flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl shadow-lg p-6 border border-gray-100"
-            >
-              <div className="text-center">
-                <div className="text-6xl mb-4">🗺️</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Interactive Journey Map</h3>
-                <p className="text-gray-600 mb-6">Click on any marker to explore my professional and educational journey</p>
-                <div className="grid grid-cols-1 gap-4 max-w-md mx-auto">
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Briefcase className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-800 text-sm">Work Experience</div>
-                      <div className="text-xs text-gray-600">Professional journey across cities</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
-                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                      <GraduationCap className="w-4 h-4 text-red-600" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-800 text-sm">Education</div>
-                      <div className="text-xs text-gray-600">Academic journey and learning</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm">
-                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-yellow-600" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-800 text-sm">Awards & Recognition</div>
-                      <div className="text-xs text-gray-600">Achievements and honors</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Custom CSS for enhanced styling */}
-      <style jsx>{`
-        .custom-popup-container .leaflet-popup-content-wrapper {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          border-radius: 15px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .custom-popup-container .leaflet-popup-content {
-          margin: 15px;
-          min-width: 200px;
-        }
-        
-        .journey-path {
-          animation: dash 3s linear infinite;
-        }
-        
-        @keyframes dash {
-          to {
-            stroke-dashoffset: -20;
-          }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default InteractiveMap; 
+const NarrativeCard = ({ item, index, onActive }) => {
+  const { ref, inView } = useInView({ threshold: 0.6, triggerOnce: false });
+
+  useEffect(() => {
+    if (inView) onActive();
+  }, [inView]);
+
+  if (item.id === 'intro') {
+    return <div ref={ref} className="h-10"></div>; // Invisible trigger for intro state
+  }
+
+  return (
+    <div ref={ref} className={`transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-20 translate-y-10'}`}>
+      <div className="relative pl-8 border-l-2 border-white/10">
+        <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-4 border-[#050505] transition-colors duration-500 ${inView ? 'bg-blue-500' : 'bg-gray-700'}`} />
+        <span className="text-sm font-mono text-blue-400 mb-2 block">{item.year}</span>
+        <h3 className="text-3xl font-bold text-white mb-2">{item.title}</h3>
+        <div className="flex items-center gap-2 text-gray-400 mb-6 font-medium">
+          <MapPin className="w-4 h-4" />
+          {item.location}
+        </div>
+        <div className={`glass-dark p-6 rounded-2xl border transition-all duration-500 ${inView ? 'border-white/20 bg-white/5 shadow-2xl scale-[1.02]' : 'border-white/5 bg-transparent'}`}>
+          <p className="text-gray-300 leading-relaxed text-lg">{item.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InteractiveMap;

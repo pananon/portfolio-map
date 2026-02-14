@@ -1,170 +1,157 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Hero from './components/Hero';
-import InteractiveMap from './components/InteractiveMap';
 import Experience from './components/Experience';
 import Education from './components/Education';
 import Skills from './components/Skills';
-import Awards from './components/Awards';
 import Contact from './components/Contact';
 import Navigation from './components/Navigation';
 import ParticleBackground from './components/ParticleBackground';
 import CursorTrail from './components/CursorTrail';
-import FloatingActionButton from './components/FloatingActionButton';
+// NEW 3D Component
+import JourneyMap from './components/JourneyMap';
+import GlobalEarth from './components/GlobalEarth';
 import { portfolioData } from './data/portfolioData';
 
-function App() {
+// Reusable Scale-In Section Wrapper
+const ZoomSection = ({ children, className, id }) => {
   return (
-    <div className="min-h-screen bg-secondary-50">
-      {/* Cool Background Effects */}
-      <ParticleBackground />
+    <motion.section
+      id={id}
+      className={className}
+      initial="offscreen"
+      whileInView="onscreen"
+      viewport={{ once: false, amount: 0.3 }}
+      variants={{
+        offscreen: { opacity: 0, scale: 0.85, filter: 'blur(10px)' },
+        onscreen: {
+          opacity: 1,
+          scale: 1,
+          filter: 'blur(0px)',
+          transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } // Custom easing
+        }
+      }}
+    >
+      {children}
+    </motion.section>
+  );
+};
+
+// Component for the main single-page scroll layout
+const MainPortfolio = () => {
+  const [journeyStep, setJourneyStep] = React.useState(0);
+
+  // Smooth scroll only needed here
+  useEffect(() => {
+    const handleLinkClick = (e) => {
+      const href = e.target.getAttribute('href');
+      if (href?.startsWith('#')) {
+        e.preventDefault();
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
+      }
+    };
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', handleLinkClick);
+    });
+
+    return () => {
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.removeEventListener('click', handleLinkClick);
+      });
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-transparent text-white selection:bg-white selection:text-black">
+
+      {/* Background Elements */}
+      <GlobalEarth activeStep={journeyStep} />
+
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        {/* <ParticleBackground /> - Replaced by GlobalEarth */}
+        <div className="noise-bg opacity-[0.03] mix-blend-overlay" />
+      </div>
+
       <CursorTrail />
-      
-      <Navigation />
-      
-      <main>
-        {/* Hero Section */}
-        <section id="hero">
+      {/* <Navigation /> Removed as per request */}
+
+      <main className="relative z-10">
+
+        <ZoomSection>
           <Hero data={portfolioData.personal} />
-        </section>
-        
-        {/* Interactive Map Section */}
-        <section id="journey" className="section-padding bg-white">
-          <div className="container-max">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl font-bold text-secondary-900 mb-4">
-                Education and Career
-              </h2>
-              <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
-                Explore my professional journey through the cities where I've worked and grown
-              </p>
-            </motion.div>
-            <InteractiveMap data={portfolioData} />
-          </div>
-        </section>
-        
-        {/* Experience Section */}
-        <section id="experience" className="section-padding bg-secondary-50">
-          <div className="container-max">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl font-bold text-secondary-900 mb-4">
-                Professional Experience
-              </h2>
-              <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
-                A timeline of my career progression and achievements
-              </p>
-            </motion.div>
-            <Experience experiences={portfolioData.experience} />
-          </div>
-        </section>
-        
-        {/* Education Section */}
-        <section id="education" className="section-padding bg-white">
-          <div className="container-max">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl font-bold text-secondary-900 mb-4">
-                Education
-              </h2>
-              <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
-                My academic background and qualifications
-              </p>
-            </motion.div>
-            <Education education={portfolioData.education} />
-          </div>
-        </section>
-        
+        </ZoomSection>
+
+        {/* JourneyMap - Updates global background state */}
+        <JourneyMap activeStep={journeyStep} onStepChange={setJourneyStep} />
+
         {/* Skills Section */}
-        <section id="skills" className="section-padding bg-secondary-50">
+        <ZoomSection id="skills" className="section-padding">
           <div className="container-max">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }} // Keep title animation simple
+              transition={{ duration: 0.8 }}
+              className="mb-16"
             >
-              <h2 className="text-4xl font-bold text-secondary-900 mb-4">
-                Skills & Certifications
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight">
+                Expertise
               </h2>
-              <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
-                Technical skills, languages, and professional certifications
-              </p>
+              <div className="h-1 w-20 bg-white/20" />
             </motion.div>
             <Skills skills={portfolioData.skills} awards={portfolioData.awards} />
           </div>
-        </section>
-        
-        {/* Awards Section */}
-        <section id="awards" className="section-padding bg-white">
-          <div className="container-max">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl font-bold text-secondary-900 mb-4">
-                Awards & Recognition
-              </h2>
-              <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
-                Celebrating achievements that showcase dedication and excellence across multiple domains
-              </p>
-            </motion.div>
-            <Awards awards={portfolioData.awards} />
-          </div>
-        </section>
-        
+        </ZoomSection>
+
         {/* Contact Section */}
-        <section id="contact" className="section-padding bg-secondary-50">
+        <ZoomSection id="contact" className="section-padding min-h-[50vh] flex flex-col justify-center">
           <div className="container-max">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="mb-16"
             >
-              <h2 className="text-4xl font-bold text-secondary-900 mb-4">
-                Get In Touch
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight">
+                Contact
               </h2>
-              <p className="text-lg text-secondary-600 max-w-2xl mx-auto">
-                Let's connect and discuss opportunities
-              </p>
+              <div className="h-1 w-20 bg-white/20" />
             </motion.div>
             <Contact personal={portfolioData.personal} />
           </div>
-        </section>
+        </ZoomSection>
       </main>
-      
-      {/* Floating Action Button */}
-      <FloatingActionButton personalData={portfolioData.personal} />
-      
-      {/* Footer */}
-      <footer className="bg-secondary-900 text-white py-8">
+
+      {/* Minimal Footer */}
+      <footer className="py-8 border-t border-white/10 relative z-10">
         <div className="container-max text-center">
-          <p className="text-secondary-300">
-            © 2024 Harimangal Pandey. All rights reserved.
-          </p>
-          <p className="text-secondary-400 text-sm mt-2">
-            Built with React, Tailwind CSS, and Framer Motion
+          <p className="text-gray-500 text-sm">
+            © {new Date().getFullYear()} Harimangal Pandey. Crafted with precision.
           </p>
         </div>
       </footer>
     </div>
   );
+};
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainPortfolio />} />
+        <Route path="/journey" element={<JourneyMap />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App; 
+export default App;

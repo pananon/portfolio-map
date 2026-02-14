@@ -1,46 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const TypingAnimation = ({ texts, speed = 100, delay = 2000 }) => {
-  const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  const [currentCharIndex, setCurrentCharIndex] = useState(0);
+const TypingAnimation = ({
+  texts,
+  speed = 50,
+  deleteSpeed = 30,
+  delay = 1500,
+  className = "",
+  shouldPlaySound = false
+}) => {
+  const [text, setText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loopNum, setLoopNum] = useState(0);
+  const [typingSpeed, setTypingSpeed] = useState(speed);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        if (currentCharIndex < texts[currentTextIndex].length) {
-          setCurrentCharIndex(currentCharIndex + 1);
+    let timer;
+    const i = loopNum % texts.length;
+    const fullText = texts[i];
+
+    const handleTyping = () => {
+      if (isDeleting) {
+        if (text === '') {
+          setIsDeleting(false);
+          setLoopNum(loopNum + 1);
         } else {
-          setTimeout(() => setIsDeleting(true), delay);
+          setText(fullText.substring(0, text.length - 1));
+          setTypingSpeed(deleteSpeed);
         }
       } else {
-        if (currentCharIndex > 0) {
-          setCurrentCharIndex(currentCharIndex - 1);
+        if (text === fullText) {
+          timer = setTimeout(() => setIsDeleting(true), delay);
+          return;
         } else {
-          setIsDeleting(false);
-          setCurrentTextIndex((currentTextIndex + 1) % texts.length);
+          const nextChar = fullText.substring(0, text.length + 1);
+          setText(nextChar);
+          setTypingSpeed(speed + Math.random() * 30);
         }
       }
-    }, isDeleting ? speed / 2 : speed);
 
-    return () => clearTimeout(timeout);
-  }, [currentCharIndex, isDeleting, currentTextIndex, texts, speed, delay]);
+      timer = setTimeout(handleTyping, typingSpeed);
+    };
+
+    timer = setTimeout(handleTyping, typingSpeed);
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, loopNum, texts, speed, deleteSpeed, delay]);
 
   return (
-    <div className="inline-block">
-      <span className="text-primary-200">
-        {texts[currentTextIndex].substring(0, currentCharIndex)}
-      </span>
+    <span className={className}>
+      {text}
       <motion.span
         animate={{ opacity: [1, 0] }}
-        transition={{ duration: 0.5, repeat: Infinity }}
-        className="text-primary-200 ml-1"
-      >
-        |
-      </motion.span>
-    </div>
+        transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
+        className="ml-1 inline-block w-[2px] h-[1em] bg-blue-400 align-middle"
+      />
+    </span>
   );
 };
 
-export default TypingAnimation; 
+export default TypingAnimation;

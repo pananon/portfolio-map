@@ -1,70 +1,40 @@
-import React, { useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 const CursorTrail = () => {
-  const trailRef = useRef([]);
-  const mouseRef = useRef({ x: 0, y: 0 });
+  const cursorX = useMotionValue(-100);
+  const cursorY = useMotionValue(-100);
+
+  // Smooth spring animation
+  const springConfig = { damping: 25, stiffness: 700 };
+  const cursorXSpring = useSpring(cursorX, springConfig);
+  const cursorYSpring = useSpring(cursorY, springConfig);
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-      
-      // Add new trail point
-      const newPoint = {
-        x: e.clientX,
-        y: e.clientY,
-        timestamp: Date.now()
-      };
-      
-      trailRef.current.push(newPoint);
-      
-      // Keep only last 20 points
-      if (trailRef.current.length > 20) {
-        trailRef.current.shift();
-      }
+    const moveCursor = (e) => {
+      // Center the circle (width/height: 32px)
+      cursorX.set(e.clientX - 16);
+      cursorY.set(e.clientY - 16);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    
+    window.addEventListener('mousemove', moveCursor);
+
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', moveCursor);
     };
   }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-50">
-      {trailRef.current.map((point, index) => {
-        const opacity = (index / trailRef.current.length) * 0.6;
-        const scale = 1 - (index / trailRef.current.length) * 0.8;
-        
-        return (
-          <motion.div
-            key={point.timestamp}
-            initial={{ 
-              x: point.x - 4, 
-              y: point.y - 4,
-              scale: 0,
-              opacity: 0
-            }}
-            animate={{ 
-              x: point.x - 4, 
-              y: point.y - 4,
-              scale: scale,
-              opacity: opacity
-            }}
-            transition={{ 
-              duration: 0.1,
-              ease: "easeOut"
-            }}
-            className="absolute w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-sm"
-            style={{
-              filter: `blur(${1 + index * 0.5}px)`,
-            }}
-          />
-        );
-      })}
-    </div>
+    <motion.div
+      className="fixed top-0 left-0 pointer-events-none z-50 mix-blend-difference"
+      style={{
+        x: cursorXSpring,
+        y: cursorYSpring,
+      }}
+    >
+      <div className="w-8 h-8 bg-white rounded-full blur-sm opacity-60" />
+    </motion.div>
   );
 };
 
-export default CursorTrail; 
+export default CursorTrail;

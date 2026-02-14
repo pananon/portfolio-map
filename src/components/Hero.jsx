@@ -1,208 +1,126 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, Linkedin, ExternalLink, Code } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import TypingAnimation from './TypingAnimation';
+import MagneticButton from './MagneticButton';
 
 const Hero = ({ data }) => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const typingTexts = [
-    "Full Stack Developer",
-    "Problem Solver", 
-    "Tech Enthusiast",
-    "Creative Thinker"
-  ];
-
   return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-secondary-900 overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-      </div>
+    <section id="hero" className="relative min-h-screen flex flex-col justify-center px-6 md:px-24 pt-20 overflow-hidden">
 
+      {/* Main Content */}
       <div className="container-max relative z-10">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="text-center text-white relative"
-        >
-          {/* Name */}
-          <motion.h1
-            variants={itemVariants}
-            className="text-5xl md:text-7xl font-bold mb-6"
-          >
-            {data.name}
-          </motion.h1>
+        <div className="flex flex-col gap-2">
 
-          {/* Title with Typing Animation */}
+          {/* Greeting / Role */}
+          <div className="overflow-hidden h-8 mb-4">
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="text-lg md:text-xl text-blue-400 font-mono tracking-wide uppercase"
+            >
+              <TypingAnimation
+                texts={['Full Stack Developer', 'Creative Technologist', 'Problem Solver']}
+                speed={60}
+                delay={2000}
+              />
+            </motion.div>
+          </div>
+
+          {/* Name - Staggered Reveal */}
+          <div className="overflow-hidden">
+            <h1
+              className="font-display text-6xl md:text-9xl font-bold tracking-tighter text-white mix-blend-difference flex relative overflow-hidden"
+            >
+              {"HARIMANGAL".split("").map((char, index) => (
+                <motion.span
+                  key={index}
+                  initial={{ y: 120 }}
+                  animate={{ y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.3 + index * 0.03, ease: [0.2, 1, 0.3, 1] }}
+                  className="inline-block"
+                >
+                  {char}
+                </motion.span>
+              ))}
+            </h1>
+          </div>
+
+          <div className="overflow-hidden">
+            <h1
+              className="font-display text-6xl md:text-9xl font-bold tracking-tighter text-gray-500/50 mix-blend-difference flex relative overflow-hidden"
+            >
+              {"PANDEY".split("").map((char, index) => (
+                <motion.span
+                  key={index}
+                  initial={{ y: 120 }}
+                  animate={{ y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.5 + index * 0.03, ease: [0.2, 1, 0.3, 1] }}
+                  className="inline-block"
+                >
+                  {char}
+                </motion.span>
+              ))}
+            </h1>
+          </div>
+
+          {/* Intro Text */}
+          <div className="mt-12 max-w-2xl overflow-hidden">
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="text-xl md:text-2xl text-gray-400 font-light leading-relaxed text-balance"
+            >
+              {data.summary}
+            </motion.p>
+          </div>
+
+          {/* CTA Buttons */}
           <motion.div
-            variants={itemVariants}
-            className="text-xl md:text-2xl text-primary-200 mb-8 max-w-4xl mx-auto leading-relaxed h-8 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 1 }}
+            className="mt-12 flex gap-6"
           >
-            <TypingAnimation texts={typingTexts} speed={80} delay={3000} />
+            <MagneticButton href="https://mangalcore.com">
+              <div className="group relative px-8 py-4 bg-white text-black rounded-full font-medium overflow-hidden transition-transform">
+                <span className="relative z-10">Explore Works</span>
+                <div className="absolute inset-0 bg-gray-200 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
+              </div>
+            </MagneticButton>
+
+            <MagneticButton href="#contact">
+              <div className="px-8 py-4 border border-white/20 text-white rounded-full font-medium hover:bg-white/10 transition-colors">
+                Contact Me
+              </div>
+            </MagneticButton>
           </motion.div>
 
-          {/* Summary */}
-          <motion.p
-            variants={itemVariants}
-            className="text-lg text-secondary-200 mb-12 max-w-3xl mx-auto leading-relaxed"
-          >
-            {data.summary}
-          </motion.p>
-
-          {/* Contact Info */}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12"
-          >
-            <motion.a
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              href={`mailto:${data.email}`}
-              className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full hover:bg-white/20 transition-all duration-200"
-            >
-              <Mail size={20} />
-              <span>{data.email}</span>
-            </motion.a>
-            
-          </motion.div>
-
-          {/* Social Links */}
-          <motion.div
-            variants={itemVariants}
-            className="flex items-center justify-center gap-6 mb-16"
-          >
-            <motion.a
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              href={data.links.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white/10 backdrop-blur-sm p-4 rounded-full hover:bg-white/20 transition-all duration-200"
-            >
-              <Linkedin size={24} />
-            </motion.a>
-
-            <motion.a
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              href={data.links.personalSite}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white/10 backdrop-blur-sm p-4 rounded-full hover:bg-white/20 transition-all duration-200"
-            >
-              <ExternalLink size={24} />
-            </motion.a>
-
-            <motion.a
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              href={data.links.codechef}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white/10 backdrop-blur-sm p-4 rounded-full hover:bg-white/20 transition-all duration-200"
-            >
-              <Code size={24} />
-            </motion.a>
-          </motion.div>
-        </motion.div>
+        </div>
       </div>
 
-      {/* Scroll Indicator - Fixed Positioning */}
+      {/* Scroll Indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 2, duration: 0.5 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
+        transition={{ delay: 1.5, duration: 1 }}
+        className="absolute bottom-12 right-6 md:right-24 flex items-center gap-4 text-gray-500"
       >
+        <div className="w-12 h-[1px] bg-gray-700" />
+        <span className="text-sm uppercase tracking-widest">Scroll</span>
         <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center bg-white/5 backdrop-blur-sm"
+          animate={{ y: [0, 5, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-1 h-3 bg-white/80 rounded-full mt-2"
-          />
+          <ArrowDown size={16} />
         </motion.div>
       </motion.div>
 
-      {/* Floating Elements - Enhanced Visibility */}
-      <motion.div
-        animate={{ 
-          rotate: 360,
-          scale: [1, 1.1, 1],
-        }}
-        transition={{ 
-          rotate: { duration: 20, repeat: Infinity, ease: "linear" },
-          scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-        }}
-        className="absolute top-20 right-20 w-32 h-32 bg-primary-500/30 rounded-full blur-xl z-0"
-      />
-      
-      <motion.div
-        animate={{ 
-          rotate: -360,
-          scale: [1, 1.2, 1],
-        }}
-        transition={{ 
-          rotate: { duration: 25, repeat: Infinity, ease: "linear" },
-          scale: { duration: 6, repeat: Infinity, ease: "easeInOut" }
-        }}
-        className="absolute bottom-20 left-20 w-24 h-24 bg-secondary-500/30 rounded-full blur-xl z-0"
-      />
+      {/* Abstract Background Element (Subtle) */}
+      <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/3 w-[800px] h-[800px] bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
 
-      {/* Additional Floating Elements for Better Visual Appeal */}
-      <motion.div
-        animate={{ 
-          y: [0, -20, 0],
-          opacity: [0.3, 0.6, 0.3],
-        }}
-        transition={{ 
-          duration: 8, 
-          repeat: Infinity, 
-          ease: "easeInOut" 
-        }}
-        className="absolute top-1/3 left-10 w-16 h-16 bg-white/10 rounded-full blur-lg z-0"
-      />
-
-      <motion.div
-        animate={{ 
-          y: [0, 15, 0],
-          opacity: [0.2, 0.5, 0.2],
-        }}
-        transition={{ 
-          duration: 6, 
-          repeat: Infinity, 
-          ease: "easeInOut" 
-        }}
-        className="absolute bottom-1/3 right-16 w-20 h-20 bg-primary-400/20 rounded-full blur-lg z-0"
-      />
     </section>
   );
 };
