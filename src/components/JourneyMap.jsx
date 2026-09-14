@@ -1,117 +1,42 @@
 import React, { useEffect, useRef } from 'react';
-import { useInView } from 'react-intersection-observer';
-import { motion, AnimatePresence } from 'framer-motion';
 import { JOURNEY_DATA } from '../data/journeyData';
 
-// --- MAIN PAGE ---
-
-const JourneyMap = ({ activeStep = 0, onStepChange }) => {
-
-    // Internal state can be removed if specific step logic is handled by parent,
-    // but here we just need to report changes.
-
-    return (
-        <section className="relative w-full">
-            {/* 
-          1. STICKY VISUAL LAYER 
-          Stays fixed at the top of the viewport while we scroll through the 'triggers' container.
-      */}
-            <div className="sticky top-0 h-screen w-full overflow-hidden pointer-events-none">
-
-                {/* HUD / Text Overlay (Fixed) */}
-                <div className="absolute inset-0 z-20 flex flex-col justify-center items-center p-6 text-center pointer-events-auto">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeStep}
-                            initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
-                            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                            exit={{ opacity: 0, y: -30, filter: 'blur(10px)' }}
-                            transition={{ duration: 0.5, ease: "easeOut" }}
-                            className="max-w-4xl"
-                        >
-                            <div className="inline-block mb-4 overflow-hidden">
-                                <h3 className="text-blue-500 font-mono text-sm tracking-[0.3em] uppercase">
-                                    {JOURNEY_DATA[activeStep].year}
-                                </h3>
-                            </div>
-
-                            <h1 className="font-display text-4xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">
-                                {JOURNEY_DATA[activeStep].title}
-                            </h1>
-
-                            <div className="flex items-center justify-center gap-4 text-white/60 mb-6">
-                                <span className="text-xs uppercase tracking-widest px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                                    {JOURNEY_DATA[activeStep].location}
-                                </span>
-                            </div>
-
-                            <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-light mb-8 text-balance">
-                                {JOURNEY_DATA[activeStep].description}
-                            </p>
-
-                            {/* Tech Stack Tags */}
-                            {JOURNEY_DATA[activeStep].technologies && JOURNEY_DATA[activeStep].technologies.length > 0 && (
-                                <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
-                                    {JOURNEY_DATA[activeStep].technologies.map(tech => (
-                                        <span key={tech} className="text-xs font-mono text-blue-400 bg-blue-900/20 border border-blue-500/20 px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors hover:bg-blue-900/40 hover:border-blue-500/40 cursor-default">
-                                            {tech}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-
-                {/* Progress Bar (Fixed) */}
-                <div className="absolute left-10 top-1/2 -translate-y-1/2 h-48 w-0.5 bg-white/10 hidden md:block">
-                    <motion.div
-                        className="w-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)]"
-                        initial={{ height: '0%' }}
-                        animate={{ height: `${(activeStep / (JOURNEY_DATA.length - 1)) * 100}%` }}
-                        transition={{ duration: 0.5 }}
-                    />
-                </div>
-            </div>
-
-            {/* 
-          2. SCROLL TRIGGERS 
-          Overlaying the height of the section.
-      */}
-            <div className="absolute top-0 left-0 w-full z-30 pointer-events-none">
-                {JOURNEY_DATA.map((item, index) => (
-                    <ScrollTrigger
-                        key={item.id}
-                        index={index}
-                        setActiveStep={onStepChange}
-                    />
-                ))}
-            </div>
-
-            {/* Creates the scrollable height */}
-            <div style={{ height: `${JOURNEY_DATA.length * 40}vh` }} />
-
-        </section>
-    );
-};
-
-// Scroll Trigger Component
-const ScrollTrigger = ({ index, setActiveStep }) => {
-    const { ref, inView } = useInView({
-        threshold: 0.5,
-        rootMargin: "-20% 0px -20% 0px" // Trigger when element is more centrally visible
-    });
-
-    useEffect(() => {
-        if (inView && setActiveStep) setActiveStep(index);
-    }, [inView, index, setActiveStep]);
-
-    return (
-        <div ref={ref} className="h-[40vh] w-full flex items-center justify-center">
-            {/* Visual debugger helper (optional) */}
-            {/* <span className="text-xs text-white/10">Step {index + 1}</span> */}
-        </div>
-    );
-};
-
-export default JourneyMap;
+// A single scroll calculation keeps the card and globe in sync in both directions.
+export default function JourneyMap({ activeStep = 0, onStepChange }) {
+  const sectionRef = useRef(null);
+  const item = JOURNEY_DATA[activeStep];
+  useEffect(() => {
+    let frame;
+    const update = () => {
+      const section = sectionRef.current;
+      const height = section.offsetHeight / (JOURNEY_DATA.length + 1);
+      const next = Math.max(0, Math.min(JOURNEY_DATA.length - 1, Math.floor(-section.getBoundingClientRect().top / height)));
+      onStepChange?.(next);
+    };
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule); };
+  }, [onStepChange]);
+  const goTo = index => {
+    const section = sectionRef.current;
+    const height = section.offsetHeight / (JOURNEY_DATA.length + 1);
+    window.scrollTo({ top: window.scrollY + section.getBoundingClientRect().top + index * height + 1, behavior: 'instant' });
+  };
+  return <section id="journey" ref={sectionRef} aria-label="My journey on the map" style={{ height: `${(JOURNEY_DATA.length + 1) * 100}svh` }}>
+    <div className="sticky top-0 h-[100svh] flex items-end md:items-center justify-end p-4 md:p-10 lg:p-16">
+      <div className="w-full md:w-[48%] max-h-[75svh] md:max-h-[90svh] overflow-y-auto rounded-2xl border border-white/15 bg-black/85 backdrop-blur-xl p-5 md:p-8">
+        <div className="flex justify-between gap-4 text-xs uppercase tracking-widest text-blue-300 mb-4"><span>{item.year}</span><span>{activeStep + 1} / {JOURNEY_DATA.length}</span></div>
+        <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{item.title}</h2>
+        {item.role && <p className="text-blue-200 text-sm mb-3">{item.role}</p>}
+        <p className="text-sm text-white mb-4">● {item.location}</p>
+        <p className="text-gray-300 leading-relaxed">{item.description}</p>
+        {item.highlights && <ul className="list-disc pl-4 mt-4 space-y-2 text-sm text-gray-300 leading-relaxed">{item.highlights.map(text => <li key={text}>{text}</li>)}</ul>}
+        <div className="flex flex-wrap gap-2 mt-5">{item.technologies.map(tech => <span key={tech} className="text-xs text-blue-200 bg-blue-900/30 rounded-full px-3 py-1">{tech}</span>)}</div>
+        <nav aria-label="Journey chapters" className="mt-6 flex flex-wrap gap-1">{JOURNEY_DATA.map((chapter, index) => <button key={chapter.id} aria-label={`Go to ${chapter.title}`} aria-current={index === activeStep ? 'step' : undefined} onClick={() => goTo(index)} className="min-w-[28px] min-h-[32px] flex-1 flex items-center py-2 group"><span className={`h-1 w-full rounded-full ${index <= activeStep ? 'bg-blue-400' : 'bg-white/20 group-hover:bg-white/60'}`} /></button>)}</nav>
+        <p className="text-xs text-gray-400 mt-2">Scroll to follow the journey · or choose a chapter</p>
+      </div>
+    </div>
+  </section>;
+}

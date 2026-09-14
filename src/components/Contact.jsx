@@ -107,7 +107,7 @@ const Contact = ({ personal }) => {
             </div>
             <div>
               <h4 className="text-lg font-bold text-white mb-1">Email</h4>
-              <p className="text-gray-400 group-hover:text-white transition-colors">{personal.email}</p>
+              <p className="break-all text-gray-400 group-hover:text-white transition-colors">{personal.email}</p>
             </div>
           </motion.a>
 
@@ -124,6 +124,12 @@ const Contact = ({ personal }) => {
             </div>
           </motion.div>
         </motion.div>
+
+        <div className="flex flex-wrap gap-6 text-sm">
+          <a href={personal.links.linkedin} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-blue-300">LinkedIn</a>
+          <a href={personal.links.github} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-blue-300">GitHub</a>
+          <a href={personal.links.personalSite} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-blue-300">mangalcore.com</a>
+        </div>
 
         {/* Availability Status */}
         <motion.div variants={itemVariants} className="glass-dark rounded-2xl p-8 border border-white/5">
@@ -145,7 +151,7 @@ const Contact = ({ personal }) => {
         initial={{ opacity: 0, x: 30 }}
         animate={inView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
         transition={{ delay: 0.3, duration: 0.6 }}
-        className="glass-dark rounded-3xl p-10 border border-white/5 shadow-2xl bg-[#0a0a0a]"
+        className="glass-dark rounded-3xl p-6 md:p-10 border border-white/5 shadow-2xl bg-[#0a0a0a]"
       >
         <h3 className="font-display text-2xl font-bold text-white mb-8">
           Send a Message

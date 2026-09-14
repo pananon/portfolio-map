@@ -1,4 +1,4 @@
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
@@ -93,7 +93,11 @@ const Marker = ({ position, color, isActive }) => {
 };
 
 const CinematicCamera = ({ activeStep }) => {
-    useFrame((state) => {
+    useFrame((state, delta) => {
+        // Keep the location visible beside desktop cards and above mobile cards.
+        const { width, height } = state.size;
+        state.camera.setViewOffset(width, height, activeStep > 0 && width >= 768 ? width * 0.22 : 0, activeStep > 0 && width < 768 ? height * 0.32 : 0, width, height);
+        const smoothing = 1 - Math.exp(-3 * delta);
         const item = JOURNEY_DATA[activeStep] || JOURNEY_DATA[0];
         const targetPos = latLonToVector3(item.coordinates[0], item.coordinates[1], GLOBE_RADIUS);
 
@@ -108,14 +112,14 @@ const CinematicCamera = ({ activeStep }) => {
         const targetDir = targetPos.clone().normalize();
 
         // Ultra smooth rotation
-        currentDir.lerp(targetDir, 0.03).normalize();
+        currentDir.lerp(targetDir, smoothing).normalize();
 
         // Zoom curve
         const align = currentDir.dot(targetDir);
         const zoomOut = Math.pow(1 - align, 2) * 40;
         const targetDist = Math.min(minDist + zoomOut, maxDist);
 
-        const newDist = THREE.MathUtils.lerp(currentPos.length(), targetDist, 0.03);
+        const newDist = THREE.MathUtils.lerp(currentPos.length(), targetDist, smoothing);
 
         state.camera.position.copy(currentDir.multiplyScalar(newDist));
         state.camera.lookAt(0, 0, 0);
@@ -125,7 +129,7 @@ const CinematicCamera = ({ activeStep }) => {
 
 const GlobalEarth = ({ activeStep = 0 }) => {
     return (
-        <div className="fixed inset-0 z-0 bg-[#020202]">
+        <div className="fixed inset-0 z-0 bg-[#020202] pointer-events-none" aria-hidden="true">
             <Canvas camera={{ position: [0, 0, 10], fov: 35 }} gl={{ antialias: true, toneMapping: THREE.ReinhardToneMapping }}>
                 <color attach="background" args={['#020202']} />
                 <fog attach="fog" args={['#020202', 10, 50]} />
