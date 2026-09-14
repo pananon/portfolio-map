@@ -101,22 +101,45 @@ function Globe({ activeStep, reducedMotion }) {
   </group>;
 }
 
+// Each chapter gets a complete camera flight, including chapters in the same city.
+// Interruptions begin at the actual camera position so fast scrolling stays continuous.
 function Camera({ activeStep, reducedMotion }) {
   const offset = useRef(new THREE.Vector2());
+  const flight = useRef({ key: null, elapsed: 0 });
+  const smooth = value => {
+    const t = THREE.MathUtils.clamp(value, 0, 1);
+    return t * t * (3 - 2 * t);
+  };
   useFrame((state, delta) => {
     const { width, height } = state.size;
     const mobile = width < 768;
-    const ease = reducedMotion ? 1 : 1 - Math.exp(-2.1 * Math.min(delta, 0.1));
+    const ease = reducedMotion ? 1 : 1 - Math.exp(-3 * Math.min(delta, 0.1));
     offset.current.lerp(new THREE.Vector2(mobile ? 0 : width * 0.22, mobile ? height * 0.29 : 0), ease);
     state.camera.setViewOffset(width, height, offset.current.x, offset.current.y, width, height);
-    const item = JOURNEY_DATA[activeStep];
-    const target = latLonToVector3(...item.coordinates).normalize();
-    const current = state.camera.position.clone();
-    const direction = current.clone().normalize();
-    const distance = mobile ? 28 : activeStep === 0 ? 15.5 : 14;
-    const travelling = 1 - direction.dot(target);
-    direction.lerp(target, ease).normalize();
-    state.camera.position.copy(direction.multiplyScalar(THREE.MathUtils.lerp(current.length(), distance + travelling * 6, ease)));
+
+    const target = latLonToVector3(...JOURNEY_DATA[activeStep].coordinates).normalize();
+    // Overview shows the globe; experiences bring the geography into the foreground.
+    const destinationDistance = activeStep === 0 ? (mobile ? 28 : 15.5) : (mobile ? 8.5 : 6.8);
+    const key = `${activeStep}-${mobile}`;
+    if (flight.current.key !== key) {
+      flight.current = {
+        key,
+        elapsed: 0,
+        startDirection: state.camera.position.clone().normalize(),
+        startDistance: state.camera.position.length(),
+      };
+    }
+    const current = flight.current;
+    current.elapsed += Math.min(delta, 0.1);
+    const progress = reducedMotion ? 1 : Math.min(current.elapsed / 2.4, 1);
+    const peakDistance = Math.max(current.startDistance, destinationDistance, mobile ? 14 : 11.5);
+    // Pull back first, travel between locations, then settle close to the destination.
+    const distance = progress < 0.38
+      ? THREE.MathUtils.lerp(current.startDistance, peakDistance, smooth(progress / 0.38))
+      : THREE.MathUtils.lerp(peakDistance, destinationDistance, smooth((progress - 0.38) / 0.62));
+    const travel = smooth((progress - 0.16) / 0.62);
+    const direction = current.startDirection.clone().lerp(target, travel).normalize();
+    state.camera.position.copy(direction.multiplyScalar(distance));
     state.camera.lookAt(0, 0, 0);
   });
   return null;
