@@ -133,4 +133,3 @@ export default function GlobalEarth({ activeStep = 0 }) {
     <div className="atlas-vignette" />
   </div>;
 }
-
