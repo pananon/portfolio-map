@@ -5,7 +5,6 @@ import Hero from './components/Hero';
 import Projects from './components/Projects';
 import Skills from './components/Skills';
 import Contact from './components/Contact';
-import CursorTrail from './components/CursorTrail';
 // NEW 3D Component
 import JourneyMap from './components/JourneyMap';
 import GlobalEarth from './components/GlobalEarth';
@@ -77,7 +76,6 @@ const MainPortfolio = ({ journeyOnly = false }) => {
         <div className="noise-bg opacity-[0.03] mix-blend-overlay" />
       </div>
 
-      <CursorTrail />
       {/* <Navigation /> Removed as per request */}
 
       <main className="relative z-10">

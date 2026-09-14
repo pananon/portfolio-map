@@ -1,153 +1,136 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
-import { Stars } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
+import { useReducedMotion } from 'framer-motion';
 import * as THREE from 'three';
 import { JOURNEY_DATA } from '../data/journeyData';
 
-const GLOBE_RADIUS = 3.5;
-
-// Coordinates
-export const latLonToVector3 = (lat, lon, radius) => {
-    const phi = (90 - lat) * (Math.PI / 180);
-    const theta = (lon + 180) * (Math.PI / 180);
-    const x = -(radius * Math.sin(phi) * Math.cos(theta));
-    const z = (radius * Math.sin(phi) * Math.sin(theta));
-    const y = (radius * Math.cos(phi));
-    return new THREE.Vector3(x, y, z);
+const RADIUS = 3.5;
+const GOLD = '#d9bd89';
+export const latLonToVector3 = (lat, lon, radius = RADIUS) => {
+  const phi = THREE.MathUtils.degToRad(90 - lat);
+  const theta = THREE.MathUtils.degToRad(lon + 180);
+  return new THREE.Vector3(-radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta));
 };
+const vertexShader = `
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  void main() {
+    vUv = uv;
+    vNormal = normalize(normalMatrix * normal);
+    vec4 positionView = modelViewMatrix * vec4(position, 1.0);
+    vPosition = positionView.xyz;
+    gl_Position = projectionMatrix * positionView;
+  }
+`;
+const fragmentShader = `
+  uniform sampler2D geography;
+  varying vec2 vUv;
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  void main() {
+    float land = 1.0 - texture2D(geography, vUv).r;
+    vec3 normal = normalize(vNormal);
+    float light = 0.55 + 0.45 * max(dot(normal, normalize(vec3(-0.7, 0.9, 1.0))), 0.0);
+    vec3 ocean = vec3(0.025, 0.070, 0.090);
+    vec3 terrain = vec3(0.23, 0.34, 0.34);
+    vec3 color = mix(ocean, terrain, smoothstep(0.08, 0.75, land)) * light;
+    float rim = pow(1.0 - max(dot(normal, normalize(-vPosition)), 0.0), 3.0);
+    color += vec3(0.15, 0.33, 0.37) * rim * 0.55;
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
 
-const NightGlobe = ({ activeStep }) => {
-    // Holographic Style: Use Specular (Land/Water mask) as Emissive
-    const landMap = useLoader(THREE.TextureLoader, 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
-    const bumpMap = useLoader(THREE.TextureLoader, 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg');
+function Geography() {
+  const texture = useLoader(THREE.TextureLoader, 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
+  const uniforms = useMemo(() => ({ geography: { value: texture } }), [texture]);
+  return <mesh><sphereGeometry args={[RADIUS, 96, 64]} /><shaderMaterial uniforms={uniforms} vertexShader={vertexShader} fragmentShader={fragmentShader} /></mesh>;
+}
 
-    return (
-        <group>
-            {/* Holographic Sphere */}
-            <mesh rotation={[0, 0, 0]}>
-                <sphereGeometry args={[GLOBE_RADIUS, 128, 128]} />
-                <meshStandardMaterial
-                    color="#050510" // Deep dark blue base
-                    emissive="#204060" // Glowing blue land
-                    emissiveMap={landMap}
-                    emissiveIntensity={0.5} // Visible glow
-                    roughness={0.4}
-                    metalness={0.6}
-                    bumpMap={bumpMap}
-                    bumpScale={0.05}
-                />
-            </mesh>
+function AtlasGrid() {
+  const lines = useMemo(() => {
+    const result = [];
+    for (let lat = -60; lat <= 60; lat += 30) result.push(Array.from({ length: 121 }, (_, i) => latLonToVector3(lat, i * 3 - 180, RADIUS + 0.006)));
+    for (let lon = -180; lon < 180; lon += 30) result.push(Array.from({ length: 61 }, (_, i) => latLonToVector3(i * 3 - 90, lon, RADIUS + 0.006)));
+    return result;
+  }, []);
+  return lines.map((points, index) => <Line key={index} points={points} color="#719595" transparent opacity={0.10} lineWidth={0.6} />);
+}
 
-            {/* Grid Overlay for "Tech" feel */}
-            <mesh scale={[1.001, 1.001, 1.001]}>
-                <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
-                <meshBasicMaterial color="#0044aa" wireframe transparent opacity={0.03} />
-            </mesh>
-
-            {/* Atmosphere Glow Outer */}
-            <mesh scale={[1.02, 1.02, 1.02]}>
-                <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
-                <meshLambertMaterial
-                    color="#4488ff"
-                    transparent
-                    opacity={0.1}
-                    side={THREE.BackSide}
-                    blending={THREE.AdditiveBlending}
-                    depthWrite={false}
-                />
-            </mesh>
-
-            {/* Markers */}
-            {JOURNEY_DATA.map((item, index) => {
-                if (item.id === 'intro') return null;
-                const isActive = activeStep === index;
-                const pos = latLonToVector3(item.coordinates[0], item.coordinates[1], GLOBE_RADIUS);
-                return <Marker key={item.id} position={pos} color={item.color} isActive={isActive} />;
-            })}
-        </group>
-    );
-};
-
-const Marker = ({ position, color, isActive }) => {
-    // Minimalist glowing dot
-    const scale = isActive ? 1.5 : 0.8;
-    const opacity = isActive ? 1.0 : 0.4;
-
-    return (
-        <group position={position}>
-            {/* Glow Sprite */}
-            <mesh lookAt={() => new THREE.Vector3(0, 0, 0)}>
-                <sphereGeometry args={[0.04 * scale, 16, 16]} />
-                <meshBasicMaterial color={color} toneMapped={false} transparent opacity={opacity} />
-            </mesh>
-            {isActive && (
-                <pointLight color={color} distance={2} decay={2} intensity={2} />
-            )}
-            {/* Ring */}
-            <mesh lookAt={() => new THREE.Vector3(0, 0, 0)}>
-                <ringGeometry args={[0.06 * scale, 0.08 * scale, 32]} />
-                <meshBasicMaterial color={color} transparent opacity={opacity * 0.5} side={THREE.DoubleSide} />
-            </mesh>
-        </group>
-    );
-};
-
-const CinematicCamera = ({ activeStep }) => {
-    useFrame((state, delta) => {
-        // Keep the location visible beside desktop cards and above mobile cards.
-        const { width, height } = state.size;
-        state.camera.setViewOffset(width, height, activeStep > 0 && width >= 768 ? width * 0.22 : 0, activeStep > 0 && width < 768 ? height * 0.32 : 0, width, height);
-        const smoothing = 1 - Math.exp(-3 * delta);
-        const item = JOURNEY_DATA[activeStep] || JOURNEY_DATA[0];
-        const targetPos = latLonToVector3(item.coordinates[0], item.coordinates[1], GLOBE_RADIUS);
-
-        // Smooth cinematic zoom amounts
-        const isIntro = item.id === 'intro';
-
-        const minDist = GLOBE_RADIUS + (isIntro ? 8.0 : 3.5);
-        const maxDist = GLOBE_RADIUS + 12.0;
-
-        const currentPos = state.camera.position.clone();
-        const currentDir = currentPos.clone().normalize();
-        const targetDir = targetPos.clone().normalize();
-
-        // Ultra smooth rotation
-        currentDir.lerp(targetDir, smoothing).normalize();
-
-        // Zoom curve
-        const align = currentDir.dot(targetDir);
-        const zoomOut = Math.pow(1 - align, 2) * 40;
-        const targetDist = Math.min(minDist + zoomOut, maxDist);
-
-        const newDist = THREE.MathUtils.lerp(currentPos.length(), targetDist, smoothing);
-
-        state.camera.position.copy(currentDir.multiplyScalar(newDist));
-        state.camera.lookAt(0, 0, 0);
+function Routes({ activeStep }) {
+  const routes = useMemo(() => JOURNEY_DATA.slice(1, -1).flatMap((chapter, index) => {
+    const next = JOURNEY_DATA[index + 2];
+    const start = latLonToVector3(...chapter.coordinates).normalize();
+    const end = latLonToVector3(...next.coordinates).normalize();
+    if (start.distanceTo(end) < 0.001) return [];
+    const points = Array.from({ length: 49 }, (_, i) => {
+      const t = i / 48;
+      return start.clone().lerp(end, t).normalize().multiplyScalar(RADIUS + 0.02 + Math.sin(t * Math.PI) * 0.12);
     });
-    return null;
-};
+    return [{ points, step: index + 1 }];
+  }), []);
+  return routes.map(({ points, step }) => <Line key={step} points={points} color={GOLD} lineWidth={step === activeStep ? 1.5 : 0.7} transparent opacity={activeStep === 0 ? 0.35 : step === activeStep ? 0.85 : 0.15} />);
+}
 
-const GlobalEarth = ({ activeStep = 0 }) => {
-    return (
-        <div className="fixed inset-0 z-0 bg-[#020202] pointer-events-none" aria-hidden="true">
-            <Canvas camera={{ position: [0, 0, 10], fov: 35 }} gl={{ antialias: true, toneMapping: THREE.ReinhardToneMapping }}>
-                <color attach="background" args={['#020202']} />
-                <fog attach="fog" args={['#020202', 10, 50]} />
+function Location({ coordinates, active, label, reducedMotion }) {
+  const ring = useRef();
+  const position = useMemo(() => latLonToVector3(...coordinates, RADIUS + 0.025), [coordinates]);
+  const quaternion = useMemo(() => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), position.clone().normalize()), [position]);
+  useFrame(({ clock }) => {
+    if (ring.current) {
+      const pulse = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * 1.4) * 0.15;
+      ring.current.scale.setScalar(pulse);
+    }
+  });
+  return <group position={position} quaternion={quaternion}>
+    <mesh><sphereGeometry args={[active ? 0.025 : 0.013, 16, 16]} /><meshBasicMaterial color={active ? '#fff0d5' : '#b8c7c3'} /></mesh>
+    {active && <mesh ref={ring}><ringGeometry args={[0.048, 0.053, 48]} /><meshBasicMaterial color={GOLD} transparent opacity={0.8} side={THREE.DoubleSide} /></mesh>}
+    {active && <Html position={[0, 0.11, 0.02]} center occlude style={{ pointerEvents: 'none' }}><div className="atlas-location">{label}<span>SELECTED LOCATION</span></div></Html>}
+  </group>;
+}
 
-                <ambientLight intensity={0.1} />
-                <pointLight position={[20, 10, 10]} intensity={1.5} color="#aaddff" />
-                <pointLight position={[-20, 0, -10]} intensity={0.5} color="#cc66ff" />
+function Globe({ activeStep, reducedMotion }) {
+  const places = useMemo(() => [...new Map(JOURNEY_DATA.slice(1).map(item => [item.coordinates.join(','), item])).values()], []);
+  const selected = JOURNEY_DATA[activeStep];
+  return <group>
+    <Suspense fallback={<mesh><sphereGeometry args={[RADIUS, 64, 48]} /><meshBasicMaterial color="#233a40" /></mesh>}><Geography /></Suspense>
+    <AtlasGrid />
+    <Routes activeStep={activeStep} />
+    {places.map(place => <Location key={place.coordinates.join(',')} coordinates={place.coordinates} label={selected.location} active={activeStep > 0 && place.coordinates.join(',') === selected.coordinates.join(',')} reducedMotion={reducedMotion} />)}
+  </group>;
+}
 
-                <Suspense fallback={null}>
-                    <Stars radius={200} depth={50} count={8000} factor={3} saturation={0} fade />
-                    <NightGlobe activeStep={activeStep} />
-                    <CinematicCamera activeStep={activeStep} />
-                </Suspense>
-            </Canvas>
-            {/* Vignette */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)] pointer-events-none" />
-        </div>
-    );
-};
+function Camera({ activeStep, reducedMotion }) {
+  const offset = useRef(new THREE.Vector2());
+  useFrame((state, delta) => {
+    const { width, height } = state.size;
+    const mobile = width < 768;
+    const ease = reducedMotion ? 1 : 1 - Math.exp(-2.1 * Math.min(delta, 0.1));
+    offset.current.lerp(new THREE.Vector2(mobile ? 0 : width * 0.22, mobile ? height * 0.29 : 0), ease);
+    state.camera.setViewOffset(width, height, offset.current.x, offset.current.y, width, height);
+    const item = JOURNEY_DATA[activeStep];
+    const target = latLonToVector3(...item.coordinates).normalize();
+    const current = state.camera.position.clone();
+    const direction = current.clone().normalize();
+    const distance = mobile ? 28 : activeStep === 0 ? 15.5 : 14;
+    const travelling = 1 - direction.dot(target);
+    direction.lerp(target, ease).normalize();
+    state.camera.position.copy(direction.multiplyScalar(THREE.MathUtils.lerp(current.length(), distance + travelling * 6, ease)));
+    state.camera.lookAt(0, 0, 0);
+  });
+  return null;
+}
 
-export default GlobalEarth;
+export default function GlobalEarth({ activeStep = 0 }) {
+  const reducedMotion = useReducedMotion();
+  return <div className="atlas-background" aria-hidden="true">
+    <div className="atlas-ambient" />
+    <Canvas dpr={[1, 1.5]} camera={{ position: latLonToVector3(20.5937, 78.9629, 16).toArray(), fov: 38 }} gl={{ antialias: true, alpha: true }}>
+      <Globe activeStep={activeStep} reducedMotion={reducedMotion} />
+      <Camera activeStep={activeStep} reducedMotion={reducedMotion} />
+    </Canvas>
+    <div className="atlas-vignette" />
+  </div>;
+}
+

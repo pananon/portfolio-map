@@ -25,18 +25,25 @@ export default function JourneyMap({ activeStep = 0, onStepChange }) {
     window.scrollTo({ top: window.scrollY + section.getBoundingClientRect().top + index * height + 1, behavior: 'instant' });
   };
   return <section id="journey" ref={sectionRef} aria-label="My journey on the map" style={{ height: `${(JOURNEY_DATA.length + 1) * 100}svh` }}>
-    <div className="sticky top-0 h-[100svh] flex items-end md:items-center justify-end p-4 md:p-10 lg:p-16">
-      <div className="w-full md:w-[48%] max-h-[75svh] md:max-h-[90svh] overflow-y-auto rounded-2xl border border-white/15 bg-black/85 backdrop-blur-xl p-5 md:p-8">
-        <div className="flex justify-between gap-4 text-xs uppercase tracking-widest text-blue-300 mb-4"><span>{item.year}</span><span>{activeStep + 1} / {JOURNEY_DATA.length}</span></div>
-        <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">{item.title}</h2>
-        {item.role && <p className="text-blue-200 text-sm mb-3">{item.role}</p>}
-        <p className="text-sm text-white mb-4">● {item.location}</p>
-        <p className="text-gray-300 leading-relaxed">{item.description}</p>
-        {item.highlights && <ul className="list-disc pl-4 mt-4 space-y-2 text-sm text-gray-300 leading-relaxed">{item.highlights.map(text => <li key={text}>{text}</li>)}</ul>}
-        <div className="flex flex-wrap gap-2 mt-5">{item.technologies.map(tech => <span key={tech} className="text-xs text-blue-200 bg-blue-900/30 rounded-full px-3 py-1">{tech}</span>)}</div>
-        <nav aria-label="Journey chapters" className="mt-6 flex flex-wrap gap-1">{JOURNEY_DATA.map((chapter, index) => <button key={chapter.id} aria-label={`Go to ${chapter.title}`} aria-current={index === activeStep ? 'step' : undefined} onClick={() => goTo(index)} className="min-w-[28px] min-h-[32px] flex-1 flex items-center py-2 group"><span className={`h-1 w-full rounded-full ${index <= activeStep ? 'bg-blue-400' : 'bg-white/20 group-hover:bg-white/60'}`} /></button>)}</nav>
-        <p className="text-xs text-gray-400 mt-2">Scroll to follow the journey · or choose a chapter</p>
-      </div>
+    <div className="atlas-stage">
+      <header className="atlas-heading"><span className="atlas-eyebrow">A CAREER IN COORDINATES</span><p>The journey<span>.</span></p></header>
+      <div className="atlas-map-caption" aria-hidden="true"><span>INDIA / {item.location.toUpperCase()}</span><span>{item.coordinates[0].toFixed(2)}° N &nbsp; {item.coordinates[1].toFixed(2)}° E</span></div>
+      <article className="atlas-card">
+        <div className="atlas-card-top"><span>{item.type === 'intro' ? 'THE ATLAS' : item.type === 'education' ? 'FOUNDATIONS' : 'EXPERIENCE'}</span><span>{String(activeStep + 1).padStart(2, '0')} / {JOURNEY_DATA.length}</span></div>
+        <div key={item.id} className="atlas-card-body">
+          <p className="atlas-date">{item.year}</p>
+          <h2>{item.title}</h2>
+          {item.role && <p className="atlas-role">{item.role}</p>}
+          <p className="atlas-city"><span />{item.location}</p>
+          <p className="atlas-description">{item.description}</p>
+          {item.highlights && <ul className="atlas-highlights">{item.highlights.map(text => <li key={text}>{text}</li>)}</ul>}
+          <div className="atlas-tags">{item.technologies.map(tech => <span key={tech}>{tech}</span>)}</div>
+        </div>
+        <footer className="atlas-card-footer">
+          <nav aria-label="Journey chapters" className="atlas-chapters">{JOURNEY_DATA.map((chapter, index) => <button key={chapter.id} aria-label={`Go to ${chapter.title}`} aria-current={index === activeStep ? 'step' : undefined} onClick={() => goTo(index)}><span /></button>)}</nav>
+          <div className="atlas-controls"><span>SCROLL TO EXPLORE</span><div><button aria-label="Previous chapter" disabled={activeStep === 0} onClick={() => goTo(activeStep - 1)}>←</button><button aria-label="Next chapter" disabled={activeStep === JOURNEY_DATA.length - 1} onClick={() => goTo(activeStep + 1)}>→</button></div></div>
+        </footer>
+      </article>
     </div>
   </section>;
 }
