@@ -1,14 +1,10 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Hero from './components/Hero';
-import Experience from './components/Experience';
-import Education from './components/Education';
+import Projects from './components/Projects';
 import Skills from './components/Skills';
 import Contact from './components/Contact';
-import Navigation from './components/Navigation';
-import ParticleBackground from './components/ParticleBackground';
-import CursorTrail from './components/CursorTrail';
 // NEW 3D Component
 import JourneyMap from './components/JourneyMap';
 import GlobalEarth from './components/GlobalEarth';
@@ -39,13 +35,13 @@ const ZoomSection = ({ children, className, id }) => {
 };
 
 // Component for the main single-page scroll layout
-const MainPortfolio = () => {
+const MainPortfolio = ({ journeyOnly = false }) => {
   const [journeyStep, setJourneyStep] = React.useState(0);
 
   // Smooth scroll only needed here
   useEffect(() => {
     const handleLinkClick = (e) => {
-      const href = e.target.getAttribute('href');
+      const href = e.currentTarget.getAttribute('href');
       if (href?.startsWith('#')) {
         e.preventDefault();
         const element = document.querySelector(href);
@@ -80,18 +76,24 @@ const MainPortfolio = () => {
         <div className="noise-bg opacity-[0.03] mix-blend-overlay" />
       </div>
 
-      <CursorTrail />
       {/* <Navigation /> Removed as per request */}
 
       <main className="relative z-10">
 
-        <ZoomSection>
+        {!journeyOnly && <ZoomSection>
           <Hero data={portfolioData.personal} />
-        </ZoomSection>
+        </ZoomSection>}
 
         {/* JourneyMap - Updates global background state */}
         <JourneyMap activeStep={journeyStep} onStepChange={setJourneyStep} />
 
+        <ZoomSection id="projects" className="section-padding">
+          <div className="container-max">
+            <h2 className="text-4xl md:text-6xl font-bold mb-6">Selected projects</h2>
+            <p className="text-gray-300 mb-10 max-w-2xl">Products I founded and built, from AI tooling to fitness platforms and open-source React utilities.</p>
+            <Projects projects={portfolioData.projects} />
+          </div>
+        </ZoomSection>
         {/* Skills Section */}
         <ZoomSection id="skills" className="section-padding">
           <div className="container-max">
@@ -135,7 +137,7 @@ const MainPortfolio = () => {
       <footer className="py-8 border-t border-white/10 relative z-10">
         <div className="container-max text-center">
           <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} Harimangal Pandey. Crafted with precision.
+            © {new Date().getFullYear()} Hari Mangal Pandey. Crafted with precision.
           </p>
         </div>
       </footer>
@@ -148,7 +150,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<MainPortfolio />} />
-        <Route path="/journey" element={<JourneyMap />} />
+        <Route path="/journey" element={<MainPortfolio journeyOnly />} />
       </Routes>
     </Router>
   );
