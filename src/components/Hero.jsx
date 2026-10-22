@@ -1,129 +1,68 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ArrowDown } from 'lucide-react';
-import TypingAnimation from './TypingAnimation';
-import MagneticButton from './MagneticButton';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import Icon from './Icon';
+import SplitWords from './SplitWords';
+import { gsap, prefersReducedMotion } from '../lib/motion';
 
-const Hero = ({ data }) => {
+const istFormat = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false });
+
+function useIstTime() {
+  const [time, setTime] = useState(() => istFormat.format(new Date()));
+  useEffect(() => {
+    const id = setInterval(() => setTime(istFormat.format(new Date())), 20000);
+    return () => clearInterval(id);
+  }, []);
+  return time;
+}
+
+export default function Hero({ data }) {
+  const root = useRef(null);
+  const time = useIstTime();
+
+  // Intro: the name rises, the survey rule draws, the readouts settle.
+  // Navigation, positioning copy and CTAs are never hidden, so the page is usable from frame one.
+  useLayoutEffect(() => {
+    if (prefersReducedMotion()) return undefined;
+    const ctx = gsap.context(() => {
+      gsap.timeline({ defaults: { ease: 'power3.out' } })
+        .from('.hero-title .split-inner', { yPercent: 112, duration: 1.05, stagger: 0.08, ease: 'power4.out' }, 0.15)
+        .from('.hero-rule', { scaleX: 0, transformOrigin: 'left center', duration: 1 }, 0.45)
+        .from('.hero-coords > *', { y: 10, autoAlpha: 0, duration: 0.5, stagger: 0.06 }, 0.55)
+        .from('.hero-facts > div', { y: 16, autoAlpha: 0, duration: 0.6, stagger: 0.07 }, 0.75);
+    }, root);
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section id="hero" className="relative min-h-screen flex flex-col justify-center px-6 md:px-24 pt-20 pb-28 overflow-hidden">
+    <section id="top" ref={root} className="hero" data-tone="dark" aria-labelledby="hero-title">
+      <div className="hero-inner wrap">
+        <p className="hero-coords mono">
+          <span>17.39° N · 78.49° E</span>
+          <span>Hyderabad, India</span>
+          <span><time>{time}</time> IST</span>
+        </p>
 
-      {/* Main Content */}
-      <div className="container-max relative z-10">
-        <div className="flex flex-col gap-2">
+        <SplitWords as="h1" id="hero-title" className="hero-title" lines={['Hari Mangal', 'Pandey']} />
 
-          {/* Greeting / Role */}
-          <div className="overflow-hidden min-h-[2rem] mb-4">
-            <motion.div
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="text-lg md:text-xl text-blue-400 font-mono tracking-wide uppercase"
-            >
-              <TypingAnimation
-                texts={['Frontend & Full-Stack', 'AI-Enabled Products', 'React · Next.js · Mobile']}
-                speed={60}
-                delay={2000}
-              />
-            </motion.div>
+        <div className="hero-rule" aria-hidden="true" />
+
+        <div className="hero-lede">
+          <p className="hero-role">{data.title}</p>
+          <p className="hero-summary">
+            I build web and mobile products with React, Next.js, React Native and Node.js, and the streaming AI,
+            retrieval and agentic features that live inside them.
+          </p>
+          <div className="hero-ctas">
+            <a href="#work" className="btn btn-solid">Selected work <Icon name="arrow-down-linear" /></a>
+            <a href="#journey" className="btn btn-line">Open the atlas</a>
           </div>
-
-          {/* Name - Staggered Reveal */}
-          <div className="overflow-hidden">
-            <h1
-              className="font-display text-[clamp(2.6rem,8vw,8rem)] font-bold tracking-tighter text-white mix-blend-difference flex relative overflow-hidden"
-            >
-              {"HARI MANGAL".split("").map((char, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ y: 120 }}
-                  animate={{ y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.3 + index * 0.03, ease: [0.2, 1, 0.3, 1] }}
-                  className="inline-block whitespace-pre"
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </h1>
-          </div>
-
-          <div className="overflow-hidden">
-            <h1
-              className="font-display text-[clamp(2.6rem,8vw,8rem)] font-bold tracking-tighter text-gray-500/50 mix-blend-difference flex relative overflow-hidden"
-            >
-              {"PANDEY".split("").map((char, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ y: 120 }}
-                  animate={{ y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.5 + index * 0.03, ease: [0.2, 1, 0.3, 1] }}
-                  className="inline-block whitespace-pre"
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </h1>
-          </div>
-
-          <p className="mt-6 text-lg text-blue-200">{data.title}<br /><span className="text-gray-400">{data.focus}</span></p>
-          {/* Intro Text */}
-          <div className="mt-12 max-w-2xl overflow-hidden">
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-xl md:text-2xl text-gray-400 font-light leading-relaxed text-balance"
-            >
-              {data.summary}
-            </motion.p>
-          </div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 1 }}
-            className="mt-10 flex flex-wrap gap-4"
-          >
-            <MagneticButton href="#projects">
-              <div className="group relative px-8 py-4 bg-white text-black rounded-full font-medium overflow-hidden transition-transform">
-                <span className="relative z-10">Explore Works</span>
-                <div className="absolute inset-0 bg-gray-200 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-              </div>
-            </MagneticButton>
-
-            <MagneticButton href="#contact">
-              <div className="px-8 py-4 border border-white/20 text-white rounded-full font-medium hover:bg-white/10 transition-colors">
-                Contact Me
-              </div>
-            </MagneticButton>
-          </motion.div>
-
         </div>
+
+        <dl className="hero-facts">
+          <div><dt className="mono">In production</dt><dd>6+ years</dd></div>
+          <div><dt className="mono">Built end to end</dt><dd>4 products</dd></div>
+          <div><dt className="mono">Now</dt><dd>Tech Mahindra <span>for Microsoft</span></dd></div>
+        </dl>
       </div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-12 right-6 md:right-24 flex items-center gap-4 text-gray-500"
-      >
-        <div className="w-12 h-[1px] bg-gray-700" />
-        <span className="text-sm uppercase tracking-widest">Scroll</span>
-        <motion.div
-          animate={{ y: [0, 5, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ArrowDown size={16} />
-        </motion.div>
-      </motion.div>
-
-      {/* Abstract Background Element (Subtle) */}
-      <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/3 w-[800px] h-[800px] bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
-
     </section>
   );
-};
-
-export default Hero; 
+}
