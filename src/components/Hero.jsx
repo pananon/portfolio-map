@@ -6,14 +6,14 @@ import MagneticButton from './MagneticButton';
 
 const Hero = ({ data }) => {
   return (
-    <section id="hero" className="relative min-h-screen flex flex-col justify-center px-6 md:px-24 pt-20 overflow-hidden">
+    <section id="hero" className="relative min-h-screen flex flex-col justify-center px-6 md:px-24 pt-20 pb-28 overflow-hidden">
 
       {/* Main Content */}
       <div className="container-max relative z-10">
         <div className="flex flex-col gap-2">
 
           {/* Greeting / Role */}
-          <div className="overflow-hidden h-8 mb-4">
+          <div className="overflow-hidden min-h-[2rem] mb-4">
             <motion.div
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -21,7 +21,7 @@ const Hero = ({ data }) => {
               className="text-lg md:text-xl text-blue-400 font-mono tracking-wide uppercase"
             >
               <TypingAnimation
-                texts={['Full Stack Developer', 'Creative Technologist', 'Problem Solver']}
+                texts={['Frontend & Full-Stack', 'AI-Enabled Products', 'React · Next.js · Mobile']}
                 speed={60}
                 delay={2000}
               />
@@ -31,15 +31,15 @@ const Hero = ({ data }) => {
           {/* Name - Staggered Reveal */}
           <div className="overflow-hidden">
             <h1
-              className="font-display text-6xl md:text-9xl font-bold tracking-tighter text-white mix-blend-difference flex relative overflow-hidden"
+              className="font-display text-[clamp(2.6rem,8vw,8rem)] font-bold tracking-tighter text-white mix-blend-difference flex relative overflow-hidden"
             >
-              {"HARIMANGAL".split("").map((char, index) => (
+              {"HARI MANGAL".split("").map((char, index) => (
                 <motion.span
                   key={index}
                   initial={{ y: 120 }}
                   animate={{ y: 0 }}
                   transition={{ duration: 0.8, delay: 0.3 + index * 0.03, ease: [0.2, 1, 0.3, 1] }}
-                  className="inline-block"
+                  className="inline-block whitespace-pre"
                 >
                   {char}
                 </motion.span>
@@ -49,7 +49,7 @@ const Hero = ({ data }) => {
 
           <div className="overflow-hidden">
             <h1
-              className="font-display text-6xl md:text-9xl font-bold tracking-tighter text-gray-500/50 mix-blend-difference flex relative overflow-hidden"
+              className="font-display text-[clamp(2.6rem,8vw,8rem)] font-bold tracking-tighter text-gray-500/50 mix-blend-difference flex relative overflow-hidden"
             >
               {"PANDEY".split("").map((char, index) => (
                 <motion.span
@@ -57,7 +57,7 @@ const Hero = ({ data }) => {
                   initial={{ y: 120 }}
                   animate={{ y: 0 }}
                   transition={{ duration: 0.8, delay: 0.5 + index * 0.03, ease: [0.2, 1, 0.3, 1] }}
-                  className="inline-block"
+                  className="inline-block whitespace-pre"
                 >
                   {char}
                 </motion.span>
@@ -65,6 +65,7 @@ const Hero = ({ data }) => {
             </h1>
           </div>
 
+          <p className="mt-6 text-lg text-blue-200">{data.title}<br /><span className="text-gray-400">{data.focus}</span></p>
           {/* Intro Text */}
           <div className="mt-12 max-w-2xl overflow-hidden">
             <motion.p
@@ -82,9 +83,9 @@ const Hero = ({ data }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1 }}
-            className="mt-12 flex gap-6"
+            className="mt-10 flex flex-wrap gap-4"
           >
-            <MagneticButton href="https://mangalcore.com">
+            <MagneticButton href="#projects">
               <div className="group relative px-8 py-4 bg-white text-black rounded-full font-medium overflow-hidden transition-transform">
                 <span className="relative z-10">Explore Works</span>
                 <div className="absolute inset-0 bg-gray-200 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
