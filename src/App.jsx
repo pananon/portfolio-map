@@ -1,146 +1,83 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import SiteHeader from './components/SiteHeader';
 import Hero from './components/Hero';
-import Projects from './components/Projects';
-import Skills from './components/Skills';
-import Contact from './components/Contact';
-// NEW 3D Component
+import Work from './components/Work';
 import JourneyMap from './components/JourneyMap';
-import GlobalEarth from './components/GlobalEarth';
+import Capabilities from './components/Capabilities';
+import Contact from './components/Contact';
+import SiteFooter from './components/SiteFooter';
 import { portfolioData } from './data/portfolioData';
+import { ScrollTrigger, scrollToTarget, startSmoothScroll } from './lib/motion';
 
-// Reusable Scale-In Section Wrapper
-const ZoomSection = ({ children, className, id }) => {
-  return (
-    <motion.section
-      id={id}
-      className={className}
-      initial="offscreen"
-      whileInView="onscreen"
-      viewport={{ once: false, amount: 0.3 }}
-      variants={{
-        offscreen: { opacity: 0, scale: 0.85, filter: 'blur(10px)' },
-        onscreen: {
-          opacity: 1,
-          scale: 1,
-          filter: 'blur(0px)',
-          transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } // Custom easing
-        }
-      }}
-    >
-      {children}
-    </motion.section>
-  );
-};
+// Static sections skip re-rendering when the journey step changes.
+const StaticHeader = memo(SiteHeader);
+const StaticHero = memo(Hero);
+const StaticWork = memo(Work);
+const StaticCapabilities = memo(Capabilities);
+const StaticContact = memo(Contact);
+const StaticFooter = memo(SiteFooter);
 
-// Component for the main single-page scroll layout
+// three.js loads in its own chunk so the page content paints before the globe.
+const GlobalEarth = lazy(() => import('./components/GlobalEarth'));
+
 const MainPortfolio = ({ journeyOnly = false }) => {
-  const [journeyStep, setJourneyStep] = React.useState(0);
+  const [journeyStep, setJourneyStep] = useState(0);
+  const [heroActive, setHeroActive] = useState(!journeyOnly);
+  const [journeyActive, setJourneyActive] = useState(journeyOnly);
+  const journeyProgress = useRef(0);
+  const journeyJump = useRef(null);
+  const selectChapter = useCallback(index => journeyJump.current?.(index), []);
 
-  // Smooth scroll only needed here
+  useEffect(() => startSmoothScroll(), []);
+
+  // In-page anchors go through the scroll engine and move focus to the destination.
   useEffect(() => {
-    const handleLinkClick = (e) => {
-      const href = e.currentTarget.getAttribute('href');
-      if (href?.startsWith('#')) {
-        e.preventDefault();
-        const element = document.querySelector(href);
-        if (element) {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-          });
-        }
-      }
+    const onClick = event => {
+      const link = event.target.closest('a[href^="#"]');
+      if (!link) return;
+      const target = document.querySelector(link.getAttribute('href'));
+      if (!target) return;
+      event.preventDefault();
+      scrollToTarget(target);
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+      history.replaceState(null, '', link.getAttribute('href'));
     };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, []);
 
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', handleLinkClick);
-    });
-
+  // The globe only renders while the hero or the journey is on screen.
+  useLayoutEffect(() => {
+    const triggers = [
+      document.getElementById('top') && ScrollTrigger.create({ trigger: '#top', start: 'top bottom', end: 'bottom top', onToggle: self => setHeroActive(self.isActive) }),
+      ScrollTrigger.create({ trigger: '#journey', start: 'top 60%', end: 'bottom 40%', onToggle: self => setJourneyActive(self.isActive) }),
+    ].filter(Boolean);
+    const refresh = () => ScrollTrigger.refresh();
+    document.fonts?.ready.then(refresh);
+    window.addEventListener('load', refresh);
     return () => {
-      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.removeEventListener('click', handleLinkClick);
-      });
+      triggers.forEach(trigger => trigger.kill());
+      window.removeEventListener('load', refresh);
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-transparent text-white selection:bg-white selection:text-black">
-
-      {/* Background Elements */}
-      <GlobalEarth activeStep={journeyStep} />
-
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        {/* <ParticleBackground /> - Replaced by GlobalEarth */}
-        <div className="noise-bg opacity-[0.03] mix-blend-overlay" />
-      </div>
-
-      {/* <Navigation /> Removed as per request */}
-
-      <main className="relative z-10">
-
-        {!journeyOnly && <ZoomSection>
-          <Hero data={portfolioData.personal} />
-        </ZoomSection>}
-
-        {/* JourneyMap - Updates global background state */}
-        <JourneyMap activeStep={journeyStep} onStepChange={setJourneyStep} />
-
-        <ZoomSection id="projects" className="section-padding">
-          <div className="container-max">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6">Selected projects</h2>
-            <p className="text-gray-300 mb-10 max-w-2xl">Products I founded and built, from AI tooling to fitness platforms and open-source React utilities.</p>
-            <Projects projects={portfolioData.projects} />
-          </div>
-        </ZoomSection>
-        {/* Skills Section */}
-        <ZoomSection id="skills" className="section-padding">
-          <div className="container-max">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }} // Keep title animation simple
-              transition={{ duration: 0.8 }}
-              className="mb-16"
-            >
-              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight">
-                Expertise
-              </h2>
-              <div className="h-1 w-20 bg-white/20" />
-            </motion.div>
-            <Skills skills={portfolioData.skills} awards={portfolioData.awards} />
-          </div>
-        </ZoomSection>
-
-        {/* Contact Section */}
-        <ZoomSection id="contact" className="section-padding min-h-[50vh] flex flex-col justify-center">
-          <div className="container-max">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="mb-16"
-            >
-              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight">
-                Contact
-              </h2>
-              <div className="h-1 w-20 bg-white/20" />
-            </motion.div>
-            <Contact personal={portfolioData.personal} />
-          </div>
-        </ZoomSection>
+    <div className="site">
+      <a className="skip-link" href="#content">Skip to content</a>
+      <Suspense fallback={<div className="atlas-background" data-visible aria-hidden="true" />}>
+        <GlobalEarth activeStep={journeyStep} layout={journeyActive ? 'journey' : 'hero'} visible={heroActive || journeyActive} progress={journeyProgress} onSelect={selectChapter} />
+      </Suspense>
+      <StaticHeader />
+      <main id="content" className="site-main">
+        {!journeyOnly && <StaticHero data={portfolioData.personal} />}
+        {!journeyOnly && <StaticWork projects={portfolioData.projects} />}
+        <JourneyMap activeStep={journeyStep} onStepChange={setJourneyStep} progressRef={journeyProgress} jumpRef={journeyJump} />
+        <StaticCapabilities skills={portfolioData.skills} awards={portfolioData.awards} />
+        <StaticContact personal={portfolioData.personal} />
       </main>
-
-      {/* Minimal Footer */}
-      <footer className="py-8 border-t border-white/10 relative z-10">
-        <div className="container-max text-center">
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} Hari Mangal Pandey. Crafted with precision.
-          </p>
-        </div>
-      </footer>
+      <StaticFooter personal={portfolioData.personal} />
     </div>
   );
 };
